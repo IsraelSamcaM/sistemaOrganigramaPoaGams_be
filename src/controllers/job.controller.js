@@ -7,7 +7,7 @@ router.get('', async (req = request, res = response) => {
     try {
         const jobs = await jobService.get()
         return res.status(200).json({
-            ok: true,
+            ok: true,   
             jobs
         })
     } catch (error) {
