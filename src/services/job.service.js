@@ -1,10 +1,11 @@
     const { default: mongoose } = require('mongoose')
     const JobModel = require('../schemas/job.model')
     const OfficerModel = require('../schemas/officer.model')
+    const LevelModel = require('../schemas/level.model')
 
 
     exports.get = async () => {
-    return await JobModel.find({}).sort({ _id: -1 })
+    return await JobModel.find({}).sort({ _id: -1}).populate("nivel_id")
     }
     exports.search = async (text) => {
         const regex = new RegExp(text, 'i')
@@ -100,8 +101,9 @@
                     id: item._id,
                     pid: item.superior,
                     name: createFullName(item.officer),
-                    img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
+                    //img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
                     title: item.nombre
+                    
                 }
             })
             return {
@@ -109,7 +111,7 @@
                 data: [{
                     id: el._id,
                     name: createFullName(el.officer),
-                    img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
+                    //img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
                     title: el.nombre
                 }, ...newOrganigram]
             }
@@ -120,4 +122,30 @@
     const createFullName = (officer) => {
         if (!officer) return 'Sin funcionario'
         return [officer.nombre, officer.paterno, officer.materno].filter(Boolean).join(" ");
+    }
+
+    exports.getJoinLevel = async () => {
+        try {
+          const job = await JobModel.aggregate([
+            {
+              $lookup: {
+                from: 'niveles', 
+                localField: 'nivel_id',
+                foreignField: '_id',
+                as: 'nivel'
+              } 
+            },
+            {
+              $unwind: '$nivel'
+            }
+          ]);
+      
+          if (job.length === 0) {
+            throw new Error('Job not found');
+          }
+      
+          return job[0];
+        } catch (error) {
+          throw new Error('Error getting job with level: ' + error.message);
+        }
     }

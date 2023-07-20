@@ -118,5 +118,6 @@ router.post('', async (req = request, res = response) => {
     }
 })
 
+router.get('/JoinLevel', jobService.getJoinLevel);
 
 module.exports = router

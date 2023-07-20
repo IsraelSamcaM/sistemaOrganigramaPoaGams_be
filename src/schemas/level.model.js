@@ -1,6 +1,6 @@
 const { Schema, model } = require('mongoose')
 
-const JobSchema = Schema({
+const LevelSchema = Schema({
     nivel: {
         type: Number,
         required: true
@@ -25,15 +25,12 @@ const JobSchema = Schema({
         type: String,
         required: true
     },
-    telefono: {
-        type: Number,
-        required: true
-    }
+   
 })
 
-JobSchema.method('toJSON', function () {
+LevelSchema.method('toJSON', function () {
     const { __v, ...object } = this.toObject()
     return object
 })
 
-module.exports = model('niveles', JobSchema)
+module.exports = model('niveles', LevelSchema)

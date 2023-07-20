@@ -1,6 +1,6 @@
 const { Schema, model } = require('mongoose')
 
-const JobSchema = Schema({
+const JobdetailSchema = Schema({
     partidaPresupuestaria: {
         type: String,
         required: true
@@ -35,9 +35,9 @@ const JobSchema = Schema({
     }
 })
 
-JobSchema.method('toJSON', function () {
+JobdetailSchema.method('toJSON', function () {
     const { __v, ...object } = this.toObject()
     return object;
 })
 
-module.exports = model('cargodetalle', JobScheme)
+module.exports = model('cargodetalle', JobdetailSchema)

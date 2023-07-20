@@ -33,18 +33,6 @@ router.get('/:text', async (req = request, res = response) => {
         })
     }
 })
-router.get('/search/job/level/:text', async (req = request, res = response) => {
-    try {
-        const jobs = await jobService.searchJobForUser(req.params.text)
-        return res.status(200).json(jobs)
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({
-            ok: false,
-            message: 'Error in server'
-        })
-    }
-})
 
 
 router.put('/:id', async (req = request, res = response) => {
