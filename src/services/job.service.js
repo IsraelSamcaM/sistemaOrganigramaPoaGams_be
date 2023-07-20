@@ -122,3 +122,34 @@
         if (!officer) return 'Sin funcionario'
         return [officer.nombre, officer.paterno, officer.materno].filter(Boolean).join(" ");
     }
+
+    exports.getJobWithLevel = async (jobId) => {
+        try {
+          const job = await JobModel.aggregate([
+            {
+              $match: {
+                _id: ObjectId(jobId)
+              }
+            },
+            {
+              $lookup: {
+                from: 'niveles', // Nombre de la colección de niveles (puede variar según tu caso)
+                localField: 'nivel_id',
+                foreignField: '_id',
+                as: 'level'
+              }
+            },
+            {
+              $unwind: '$level'
+            }
+          ]);
+      
+          if (job.length === 0) {
+            throw new Error('Job not found');
+          }
+      
+          return job[0]; // Retorna el primer documento del resultado (el join solo devolverá un documento en este caso)
+        } catch (error) {
+          throw new Error('Error getting job with level: ' + error.message);
+        }
+      };
