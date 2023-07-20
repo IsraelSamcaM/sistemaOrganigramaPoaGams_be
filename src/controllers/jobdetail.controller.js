@@ -49,9 +49,7 @@ exports.search = async (req, res) => {
 };
 
 /**
- * Agrega un nuevo detalle de puesto de trabajo.
- * @param {request} req - El objeto de solicitud de Express.
- * @param {response} res - El objeto de respuesta de Express.
+soy un cambio
  */
 exports.add = async (req, res) => {
   try {
@@ -61,7 +59,7 @@ exports.add = async (req, res) => {
     console.log(error);
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       ok: false,
-      message: 'Error adding job detail',
+      message: 'Error adding job',
     });
   }
 };
