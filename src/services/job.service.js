@@ -70,9 +70,12 @@
 
     exports.getOrganization = async () => {
         const data = await JobModel.aggregate([
+            
+           
             {
                 $match: { isRoot: true },
             },
+            
             {
                 $graphLookup: {
                     from: 'cargos',
@@ -81,38 +84,68 @@
                     connectToField: 'superior',
                     as: 'organigram',
                 },
-            }
+            },
+            
         ])
         for (const element of data) {
             const superiorOfficer = await OfficerModel.findOne({ cargo: element._id })
             element.officer = superiorOfficer
+            const nivelSuperiorOfficer = await LevelModel.findOne({ _id: element.nivel_id })
+            element.nivel_id= nivelSuperiorOfficer
             for (const [index, dependents] of element.organigram.entries()) {
                 const dependentOfficer = await OfficerModel.findOne({ cargo: dependents._id })
-                
-                element.organigram[index].officer = dependentOfficer
+                const subNivel = await LevelModel.findOne({ _id: dependents.nivel_id })
+                element.organigram[index].nivel_id = subNivel
             }
+            
         }
-        return createOrgChartData(data);
+        //console.log(data[0].organigram)
+        const tagLevel=await LevelModel.find({}).select("nivel").sort({nivel:1})
+        let tags ={}
+        tagLevel.forEach(element => {
+            tags["subLevels"+element.nivel] = {subLevels: element.nivel}
+
+        });
+        //console.log(tags)
+        return  { organigrama:createOrgChartData(data),tags:tags}
     }
     const createOrgChartData = (data) => {
+        
+        const aux=data
+
         const newData = data.map(el => {
+            
             const newOrganigram = el.organigram.map(item => {
+               let levelSuperior = aux.find(sup=>sup._id.toString()===item.superior.toString())
+               //let levelSuperior = aux.find(sup => sup._id.equals(item.superior));
+
+                if(levelSuperior){
+                    console.log(levelSuperior.nivel_id)
+                }
+                levelSuperior= levelSuperior?levelSuperior.nivel_id.nivel:item.nivel_id.nivel
+                
+                const nivelReal = item.nivel_id.nivel-levelSuperior;
+               
                 return {
                     id: item._id,
                     pid: item.superior,
                     name: createFullName(item.officer),
                     //img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
-                    title: item.nombre
-                    
+                    title: item.nombre,
+                    tags: ["subLevels"+nivelReal],
+                    nivel: item.nivel_id.nivel
                 }
             })
             return {
                 name: el.nombre,
+                tags: ["subLevels"+el.nivel_id.nivel],
                 data: [{
                     id: el._id,
                     name: createFullName(el.officer),
                     //img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
-                    title: el.nombre
+                    title: el.nombre,
+                    nivel: el.nivel_id.nivel
+
                 }, ...newOrganigram]
             }
         })
