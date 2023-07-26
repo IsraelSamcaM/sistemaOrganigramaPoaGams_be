@@ -74,8 +74,7 @@
            
             {
                 $match: { isRoot: true },
-            },
-            
+            },  
             {
                 $graphLookup: {
                     from: 'cargos',
@@ -109,31 +108,49 @@
         //console.log(tags)
         return  { organigrama:createOrgChartData(data),tags:tags}
     }
+    
     const createOrgChartData = (data) => {
         
-        const aux=data
-
-        const newData = data.map(el => {
-            
-            const newOrganigram = el.organigram.map(item => {
-               let levelSuperior = aux.find(sup=>sup._id.toString()===item.superior.toString())
-               //let levelSuperior = aux.find(sup => sup._id.equals(item.superior));
-
-                if(levelSuperior){
-                    console.log(levelSuperior.nivel_id)
-                }
-                levelSuperior= levelSuperior?levelSuperior.nivel_id.nivel:item.nivel_id.nivel
+        const aux = data
+       
+        data.forEach((element, i) => {
+            element.organigram.forEach((element2, y) => {
                 
-                const nivelReal = item.nivel_id.nivel-levelSuperior;
-               
+                let levelSuperior = element.organigram.find(sup=>sup._id.toString()==element2.superior.toString())
+                
+                if(levelSuperior!=undefined ){
+                    // console.log("funcionario actual ",data[i].organigram[y].nombre,"nivel ", data[i].organigram[y].nivel_id.nivel)
+                    // console.log("funcionario superior ",levelSuperior.nombre,"nivel ", levelSuperior.nivel_id.nivel)
+                    // console.log("nuevo nivel nivel ", element2.nivel_id.nivel-levelSuperior.nivel_id.nivel)
+                    data[i].organigram[y].levelReal=element2.nivel_id.nivel
+                    
+                    data[i].organigram[y].nivel_id.nivel=element2.nivel_id.nivel-levelSuperior.nivel_id.nivel
+                
+                    //console.log(data[i].organigram[y])
+                }
+            });          
+        });
+        data.forEach((element, i) => {
+            element.organigram.forEach((element2, y) => {
+              console.log(element2)
+                
+            });          
+        });
+
+                
+        
+        const newData = data.map(el => {    
+
+            const newOrganigram = el.organigram.map(item => {       
+                               
                 return {
                     id: item._id,
                     pid: item.superior,
                     name: createFullName(item.officer),
                     //img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
                     title: item.nombre,
-                    tags: ["subLevels"+nivelReal],
-                    nivel: item.nivel_id.nivel
+                    tags: ["subLevels"+item.nivel_id.nivel],
+                    nivel: item.levelReal,
                 }
             })
             return {
@@ -145,7 +162,7 @@
                     //img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
                     title: el.nombre,
                     nivel: el.nivel_id.nivel
-
+    
                 }, ...newOrganigram]
             }
         })
