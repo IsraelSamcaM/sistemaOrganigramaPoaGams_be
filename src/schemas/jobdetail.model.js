@@ -40,4 +40,4 @@ JobdetailSchema.method('toJSON', function () {
     return object;
 })
 
-module.exports = model('cargodetalle', JobdetailSchema)
+module.exports = model('cargosdetalles', JobdetailSchema)

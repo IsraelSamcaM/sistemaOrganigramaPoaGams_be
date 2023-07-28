@@ -11,6 +11,11 @@ const JobSchema = Schema({
         ref: 'cargos',
         default: null
     },
+    detalle_id:{
+        type: Schema.Types.ObjectId,
+        ref: 'cargosdetalles',
+       
+    },
     isRoot: { type: Boolean, default: false },
 
     nivel_id:{
@@ -19,11 +24,7 @@ const JobSchema = Schema({
        
     },
 
-    detalle_id:{
-        type: Schema.Types.ObjectId,
-        ref: 'cargodetalle',
-       
-    }
+    
 })
 
 JobSchema.method('toJSON', function () {

@@ -5,12 +5,16 @@
 
 
     exports.get = async () => {
-    return await JobModel.find({}).sort({ _id: -1}).populate("nivel_id")
+    const data =await JobModel.find({tipoContrato: "CONTRATO"}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id')
+    console.log(data)
+    return await JobModel.find({}).sort({ _id: -1}).populate("nivel_id").populate("detalle_id")
     }
+    
     exports.search = async (text) => {
         const regex = new RegExp(text, 'i')
-        return JobModel.find({ nombre: regex })
+        return JobModel.find({ nombre: regex }).populate("nivel_id")
     }
+    
 
     exports.searchJobForUser = async (text) => {
         const regex = new RegExp(text, 'i')
@@ -132,7 +136,7 @@
         });
         data.forEach((element, i) => {
             element.organigram.forEach((element2, y) => {
-              console.log(element2)
+              //console.log(element2)
                 
             });          
         });
