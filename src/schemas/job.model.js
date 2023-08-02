@@ -16,6 +16,24 @@ const JobSchema = Schema({
         ref: 'cargosdetalles',
        
     },
+    
+    tipoContrato: {
+        type: String,
+        required: true,
+        uppercase: true
+    },
+    estado: {
+        type: String,
+        required: true,
+        uppercase: true
+    },
+
+    secretaria: {
+        type: String,
+        required: true,
+        uppercase: true
+    },
+
     isRoot: { type: Boolean, default: false },
 
     nivel_id:{

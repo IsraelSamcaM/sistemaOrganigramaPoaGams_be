@@ -64,18 +64,18 @@
     }
 
     exports.edit = async (id, job) => {
+        console.log(job)
         const { dependents, ...values } = job
         for (const dependent of dependents) {
             await JobModel.findByIdAndUpdate(dependent, { superior: id })
+            
         }
-        return JobModel.findByIdAndUpdate(id, values, { new: true })
+        return JobModel.findByIdAndUpdate(id, values, { new: true }).populate("nivel_id")
     }
 
 
     exports.getOrganization = async () => {
-        const data = await JobModel.aggregate([
-            
-           
+        const data = await JobModel.aggregate([      
             {
                 $match: { isRoot: true },
             },  
@@ -155,6 +155,7 @@
                     title: item.nombre,
                     tags: ["subLevels"+item.nivel_id.nivel],
                     nivel: item.levelReal,
+                    estado: item.estado
                 }
             })
             return {
@@ -165,7 +166,8 @@
                     name: createFullName(el.officer),
                     //img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
                     title: el.nombre,
-                    nivel: el.nivel_id.nivel
+                    nivel: el.nivel_id.nivel,
+                    estado: el.estado
     
                 }, ...newOrganigram]
             }
