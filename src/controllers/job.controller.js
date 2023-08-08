@@ -18,6 +18,39 @@ router.get('', async (req = request, res = response) => {
         })
     }
 })
+///metodo de escala salarial 
+router.get('/escala', async (req = request, res = response) => {
+    try {
+        const salarios = await jobService.getEscalaSalarial()
+        return res.status(200).json({
+            ok: true,   
+            salarios
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,
+            message: 'Error in server'
+        })
+    }
+})
+
+router.get('/totalEscala', async (req = request, res = response) => {
+    try {
+        const totalSalarios = await jobService.getTotalEscalaSalarial()
+        return res.status(200).json({
+            ok: true,   
+            totalSalarios
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,
+            message: 'Error in server'
+        })
+    }
+})
+
 router.get('/:text', async (req = request, res = response) => {
     try {
         const jobs = await jobService.search(req.params.text)

@@ -6,7 +6,7 @@
 
     exports.get = async () => {
     const data =await JobModel.find({tipoContrato: "CONTRATO"}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id')
-    console.log(data)
+    //console.log(data)
     return await JobModel.find({}).sort({ _id: -1}).populate("nivel_id").populate("detalle_id")
     }
     
@@ -15,6 +15,104 @@
         return JobModel.find({ nombre: regex }).populate("nivel_id")
     }
     
+    exports.getEscalaSalarial= async () => {
+        const data = await JobModel.aggregate([
+                {
+                  $match: {
+                    tipoContrato: "ITEM",
+                    estado: { $ne: "ELIMINACION" }  
+                  }
+                },
+                {
+                  $lookup: {
+                    from: "niveles",
+                    localField: "nivel_id",
+                    foreignField: "_id",
+                    as: "nivelInfo"
+                  }
+                },
+                {
+                  $unwind: "$nivelInfo"
+                },
+                {
+                  $group: {
+                    _id: "$nivelInfo.nivel",
+                    cantidadCargos: { $sum: 1 },
+                    totalSueldoMensual: { $sum: "$nivelInfo.sueldo" },
+                    sueldoBase: { $first: "$nivelInfo.sueldo" }
+                  }
+                },
+                {
+                  $project: {
+                    _id: 1,
+                    cantidadCargos: 1,
+                    totalSueldoMensual: 1,
+                    sueldoBase: 1,
+                    totalSueldoAnual: { $multiply: ["$totalSueldoMensual", 12] }
+                  }
+                },
+                {
+                  $sort: {
+                    _id: 1
+                  }
+                }
+              ])
+        
+        //console.log(data)
+        return data
+
+    }
+    
+    exports.getTotalEscalaSalarial = async () => {
+        const data = await JobModel.aggregate([
+            {
+              $match: {
+                tipoContrato: "ITEM",
+                estado: { $ne: "ELIMINACION" }
+              }
+            },
+            {
+              $lookup: {
+                from: "niveles",
+                localField: "nivel_id",
+                foreignField: "_id",
+                as: "nivelInfo"
+              }
+            },
+            {
+              $unwind: "$nivelInfo"
+            },
+            {
+              $group: {
+                _id: "$nivelInfo.nivel",
+                totalSueldoMensual: { $sum: "$nivelInfo.sueldo" },
+                totalSueldoAnual: { $sum: { $multiply: ["$nivelInfo.sueldo", 12] } },
+                cantidadCargos: { $sum: 1 },
+                sueldoBase: { $first: "$nivelInfo.sueldo" }
+              }
+            },
+            {
+              $group: {
+                _id: null,
+                totalSueldo: { $sum: "$sueldoBase" },
+                totalSueldoMensual: { $sum: "$totalSueldoMensual" },
+                totalSueldoAnual: { $sum: "$totalSueldoAnual" },
+                totalCantidadCargos: { $sum: "$cantidadCargos" }
+              }
+            },
+            {
+              $project: {
+                _id: 0,
+                totalSueldo: 1,
+                totalSueldoMensual: 1,
+                totalSueldoAnual: 1,
+                totalCantidadCargos: 1
+              }
+            }
+          ]);
+          console.log(data)
+          return data
+    }
 
     exports.searchJobForUser = async (text) => {
         const regex = new RegExp(text, 'i')
@@ -64,7 +162,7 @@
     }
 
     exports.edit = async (id, job) => {
-        console.log(job)
+        //console.log(job)
         const { dependents, ...values } = job
         for (const dependent of dependents) {
             await JobModel.findByIdAndUpdate(dependent, { superior: id })
