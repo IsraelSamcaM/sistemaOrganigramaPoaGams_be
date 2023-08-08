@@ -45,7 +45,7 @@ router.get('/totalEscala', async (req = request, res = response) => {
     } catch (error) {
         console.log(error);
         res.status(500).json({
-            ok: false,
+            ok: false,  
             message: 'Error in server'
         })
     }
