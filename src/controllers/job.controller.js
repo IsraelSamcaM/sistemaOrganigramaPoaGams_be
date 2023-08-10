@@ -51,6 +51,71 @@ router.get('/totalEscala', async (req = request, res = response) => {
     }
 })
 
+router.get('/escalaPartidaPresupuestaria', async (req = request, res = response) => {
+    try {
+        const totalSalariosPartida = await jobService.getEscalaSalarialPartidaPresupuestaria()
+        return res.status(200).json({
+            ok: true,   
+            totalSalariosPartida    
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,  
+            message: 'Error in server'
+        })
+    }
+})
+
+router.get('/escalaPartidaPresupuestariaTotal', async (req = request, res = response) => {
+    try {
+        const totalSalariosPartidaTotal = await jobService.getEscalaSalarialPartidaPresupuestariaTotal()
+        return res.status(200).json({
+            ok: true,   
+            totalSalariosPartidaTotal    
+        })  
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,  
+            message: 'Error in server'
+        })
+    }
+})
+
+router.get('/totalGlobalItems', async (req = request, res = response) => {
+    try {
+        const globalSalariosItemTotal = await jobService.getItemsGlobalTotal()
+        return res.status(200).json({
+            ok: true,   
+            globalSalariosItemTotal    
+        })  
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,  
+            message: 'Error in server'
+        })
+    }
+})
+
+router.get('/totalGlobalSecretarias', async (req = request, res = response) => {
+    try {
+        const globalSecretarias = await jobService.getGlobalSecretaria()
+        return res.status(200).json({
+            ok: true,   
+            globalSecretarias    
+        })  
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,  
+            message: 'Error in server'
+        })
+    }
+})
+
+
 router.get('/:text', async (req = request, res = response) => {
     try {
         const jobs = await jobService.search(req.params.text)

@@ -65,9 +65,236 @@
     
     exports.getTotalEscalaSalarial = async () => {
         const data = await JobModel.aggregate([
+              {
+                $match: {
+                  tipoContrato: "ITEM",
+                  estado: { $ne: "ELIMINACION" }
+                }
+              },
+              {
+                $lookup: {
+                  from: "niveles",
+                  localField: "nivel_id",
+                  foreignField: "_id",
+                  as: "nivelInfo"
+                }
+              },
+              {
+                $unwind: "$nivelInfo"
+              },
+              {
+                $group: {
+                  _id: "$nivelInfo.nivel",
+                  totalSueldoMensual: { $sum: "$nivelInfo.sueldo" },
+                  totalSueldoAnual: { $sum: { $multiply: ["$nivelInfo.sueldo", 12] } },
+                  cantidadCargos: { $sum: 1 },
+                  sueldoBase: { $first: "$nivelInfo.sueldo" }
+                }
+              },
+              {
+                $group: {
+                  _id: null,
+                  totalSueldo: { $sum: "$sueldoBase" },
+                  totalSueldoMensual: { $sum: "$totalSueldoMensual" },
+                  totalSueldoAnual: { $sum: "$totalSueldoAnual" },
+                  totalCantidadCargos: { $sum: "$cantidadCargos" },
+                  totalCantidadNiveles: { $sum: 1 }
+                }
+              },
+              {
+                $project: {
+                  _id: 0,
+                  totalSueldo: 1,
+                  totalSueldoMensual: 1,
+                  totalSueldoAnual: 1,
+                  totalCantidadCargos: 1,
+                  totalCantidadNiveles: 1
+                }
+              }
+            ])
+          //console.log(data)
+          return data
+    }
+
+    //retorna por partida presupuestaria
+    exports.getEscalaSalarialPartidaPresupuestaria = async () => {
+      const data = await JobModel.aggregate([
             {
               $match: {
-                tipoContrato: "ITEM",
+                tipoContrato: "CONTRATO",
+                estado: { $ne: "ELIMINACION" }
+              }
+            },
+            {
+              $lookup: {
+                from: "cargosdetalles",
+                localField: "detalle_id",
+                foreignField: "_id",
+                as: "detalleInfo"
+              }
+            },
+            {
+              $lookup: {
+                from: "niveles",
+                localField: "nivel_id",
+                foreignField: "_id",
+                as: "nivelInfo"
+              }
+            },
+            {
+              $unwind: "$detalleInfo"
+            },
+            {
+              $unwind: "$nivelInfo"
+            },
+            {
+              $group: {
+                _id: "$detalleInfo.partidaPresupuestaria",
+                cantidadCargos: { $sum: 1 },
+                totalSueldos: { $sum: "$nivelInfo.sueldo" }
+              }
+            },
+            {
+              $project: {
+                _id: 0,
+                partidaPresupuestaria: "$_id",
+                cantidadCargos: 1,
+                totalSueldos: 1,
+                aguinaldo: "$totalSueldos",
+                aportes: { $multiply: ["$totalSueldos", 12, 0.1671] },
+                totalSueldoAnual: { $multiply: ["$totalSueldos", 12] }
+              }
+            },
+            {
+              $addFields: {
+                total: { $sum: ["$aguinaldo", "$aportes", "$totalSueldoAnual"] }
+              }
+            }
+          ])
+        //console.log(data)
+        return data
+  }
+
+  //retorna por el total global de eventuales partida presupuestaria
+  exports.getEscalaSalarialPartidaPresupuestariaTotal = async () => {
+        const data = await JobModel.aggregate([
+            {
+              $match: {
+                tipoContrato: "CONTRATO",
+                estado: { $ne: "ELIMINACION" }
+              }
+            },
+            {
+              $lookup: {
+                from: "cargosdetalles",
+                localField: "detalle_id",
+                foreignField: "_id",
+                as: "detalleInfo"
+              }
+            },
+            {
+              $lookup: {
+                from: "niveles",
+                localField: "nivel_id",
+                foreignField: "_id",
+                as: "nivelInfo"
+              }
+            },
+            {
+              $unwind: "$detalleInfo"
+            },
+            {
+              $unwind: "$nivelInfo"
+            },
+            {
+              $group: {
+                _id: null,
+                totalSueldos: { $sum: "$nivelInfo.sueldo" },
+                totalAguinaldos: { $sum: "$nivelInfo.sueldo" },
+                totalAportes: { $sum: { $multiply: ["$nivelInfo.sueldo", 12, 0.1671] } },
+                totalCostoAnual: { $sum: { $multiply: ["$nivelInfo.sueldo", 12] } },
+                cantidadCargos: { $sum: 1 }
+              }
+            },
+            {
+              $addFields: {
+                total: { $sum: ["$totalSueldos", "$totalAguinaldos", "$totalAportes", "$totalCostoAnual"] }
+              }
+            },
+            {
+              $project: {
+                _id: 0,
+                totalSueldos: 1,
+                totalAguinaldos: 1,
+                totalAportes: 1,
+                totalCostoAnual: 1,
+                cantidadCargos: 1,
+                total: 1
+              }
+            }
+          ])
+          //console.log(data)
+          return data
+    }
+
+    
+  //retorna por el total global de items 
+  exports.getItemsGlobalTotal = async () => {
+    const data = await JobModel.aggregate([
+      {
+       $match: {
+         tipoContrato: "ITEM",
+         estado: { $ne: "ELIMINACION" }
+       }
+     },
+     {
+       $lookup: {
+         from: "niveles",
+         localField: "nivel_id",
+         foreignField: "_id",
+         as: "nivelInfo"
+       }
+     },
+     {
+       $unwind: "$nivelInfo"
+     },
+     {
+       $group: {
+         _id: null,
+         totalSueldos: { $sum: "$nivelInfo.sueldo" },
+         totalAguinaldos: { $sum: "$nivelInfo.sueldo" },
+         totalAportes: { $sum: { $multiply: ["$nivelInfo.sueldo", 12, 0.1671] } },
+         totalCostoAnual: { $sum: { $multiply: ["$nivelInfo.sueldo", 12] } },
+         cantidadCargos: { $sum: 1 }
+       }
+     },
+     {
+       $addFields: {
+         total: { $sum: ["$totalAguinaldos", "$totalAportes", "$totalCostoAnual"] }
+       }
+     },
+     {
+       $project: {
+         _id: 0,
+         totalSueldos: 1,
+         totalAguinaldos: 1,
+         totalAportes: 1,
+         totalCostoAnual: 1,
+         cantidadCargos: 1,
+         total: 1
+       }
+     }
+   ]);
+      //console.log(data)
+      return data
+  }
+
+    
+  //retorna por el total global por secretarias 
+  exports.getGlobalSecretaria = async () => {
+          const data = await JobModel.aggregate([
+            {
+              $match: {
                 estado: { $ne: "ELIMINACION" }
               }
             },
@@ -84,37 +311,44 @@
             },
             {
               $group: {
-                _id: "$nivelInfo.nivel",
-                totalSueldoMensual: { $sum: "$nivelInfo.sueldo" },
-                totalSueldoAnual: { $sum: { $multiply: ["$nivelInfo.sueldo", 12] } },
+                _id: "$secretaria",
                 cantidadCargos: { $sum: 1 },
-                sueldoBase: { $first: "$nivelInfo.sueldo" }
-              }
-            },
-            {
-              $group: {
-                _id: null,
-                totalSueldo: { $sum: "$sueldoBase" },
-                totalSueldoMensual: { $sum: "$totalSueldoMensual" },
-                totalSueldoAnual: { $sum: "$totalSueldoAnual" },
-                totalCantidadCargos: { $sum: "$cantidadCargos" }
+                totalSueldos: { $sum: "$nivelInfo.sueldo" },
+                cantidadItem: {
+                  $sum: {
+                    $cond: [{ $eq: ["$tipoContrato", "ITEM"] }, 1, 0]
+                  }
+                },
+                cantidadContrato: {
+                  $sum: {
+                    $cond: [{ $eq: ["$tipoContrato", "CONTRATO"] }, 1, 0]
+                  }
+                }
               }
             },
             {
               $project: {
-                _id: 0,
-                totalSueldo: 1,
-                totalSueldoMensual: 1,
-                totalSueldoAnual: 1,
-                totalCantidadCargos: 1
+                _id: 1,
+                cantidadCargos: 1,
+                totalSueldos: 1,
+                aguinaldos: "$totalSueldos",
+                aportes: { $multiply: ["$totalSueldos", 12, 0.1671] },
+                totalSueldoAnual: { $multiply: ["$totalSueldos", 12] },
+                cantidadItem: 1,
+                cantidadContrato: 1
+              }
+            },
+            {
+              $addFields: {
+                total: { $sum: ["$aguinaldos", "$aportes", "$totalSueldoAnual"] }
               }
             }
-          ]);
-          console.log(data)
+          ])
+          //console.log(data)
           return data
-    }
-
-    exports.searchJobForUser = async (text) => {
+  }
+    
+  exports.searchJobForUser = async (text) => {
         const regex = new RegExp(text, 'i')
         return await JobModel.aggregate([
             {
