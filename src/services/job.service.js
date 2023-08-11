@@ -1,4 +1,5 @@
     const { default: mongoose } = require('mongoose')
+    const JobDetailModel = require('../schemas/jobDetail.model')
     const JobModel = require('../schemas/job.model')
     const OfficerModel = require('../schemas/officer.model')
     const LevelModel = require('../schemas/level.model')
@@ -161,7 +162,7 @@
                 cantidadCargos: 1,
                 totalSueldos: 1,
                 aguinaldo: "$totalSueldos",
-                aportes: { $multiply: ["$totalSueldos", 12, 0.1671] },
+                aportes: {$round:[{$multiply: ["$totalSueldos", 12, 0.1671]}]},
                 totalSueldoAnual: { $multiply: ["$totalSueldos", 12] }
               }
             },
@@ -211,14 +212,14 @@
                 _id: null,
                 totalSueldos: { $sum: "$nivelInfo.sueldo" },
                 totalAguinaldos: { $sum: "$nivelInfo.sueldo" },
-                totalAportes: { $sum: { $multiply: ["$nivelInfo.sueldo", 12, 0.1671] } },
+                totalAportes: { $sum:{ $multiply: ["$nivelInfo.sueldo", 12, 0.1671] }},
                 totalCostoAnual: { $sum: { $multiply: ["$nivelInfo.sueldo", 12] } },
-                cantidadCargos: { $sum: 1 }
+                cantidadCargos: { $sum: 1 },
               }
             },
             {
               $addFields: {
-                total: { $sum: ["$totalSueldos", "$totalAguinaldos", "$totalAportes", "$totalCostoAnual"] }
+                totalAportesRedondeado:{$round:["$totalAportes"]}   
               }
             },
             {
@@ -229,7 +230,8 @@
                 totalAportes: 1,
                 totalCostoAnual: 1,
                 cantidadCargos: 1,
-                total: 1
+                totalAportesRedondeado: 1,
+                total: { $sum: [ "$totalAguinaldos", "$totalAportesRedondeado", "$totalCostoAnual"] }
               }
             }
           ])
@@ -259,7 +261,7 @@
        $unwind: "$nivelInfo"
      },
      {
-       $group: {
+       $group: {    
          _id: null,
          totalSueldos: { $sum: "$nivelInfo.sueldo" },
          totalAguinaldos: { $sum: "$nivelInfo.sueldo" },
@@ -270,7 +272,7 @@
      },
      {
        $addFields: {
-         total: { $sum: ["$totalAguinaldos", "$totalAportes", "$totalCostoAnual"] }
+          totalAportesRedondeado:{$round:["$totalAportes"]}
        }
      },
      {
@@ -281,7 +283,8 @@
          totalAportes: 1,
          totalCostoAnual: 1,
          cantidadCargos: 1,
-         total: 1
+         totalAportesRedondeado:1,
+         total:{ $sum: ["$totalAguinaldos", "$totalAportesRedondeado", "$totalCostoAnual"] }
        }
      }
    ]);
@@ -332,7 +335,7 @@
                 cantidadCargos: 1,
                 totalSueldos: 1,
                 aguinaldos: "$totalSueldos",
-                aportes: { $multiply: ["$totalSueldos", 12, 0.1671] },
+                aportes: {$round:{ $multiply: ["$totalSueldos", 12, 0.1671] }},
                 totalSueldoAnual: { $multiply: ["$totalSueldos", 12] },
                 cantidadItem: 1,
                 cantidadContrato: 1
@@ -353,7 +356,7 @@
         return await JobModel.aggregate([
             {
                 $lookup: {
-                    from: "funcionarios",
+                    from: "funcionarios", 
                     localField: "_id",
                     foreignField: "cargo",
                     as: "funcionario"
@@ -385,26 +388,34 @@
         return JobModel.findByIdAndUpdate(idDependentJob, { superior: null })
     }
 
-    exports.add = async (job) => {
+    exports.add = async (job,jobDetail) => {
         const { dependents, ...values } = job
+        if(job.tipoContrato == 'CONTRATO'){
+          const createdJobDetail = new JobDetailModel(jobDetail)
+          const newJobdetail = await createdJobDetail.save()
+          values.detalle_id = newJobdetail._id 
+        }
         const createdJob = new JobModel(values)
         const newJob = await createdJob.save()
         for (const dependent of dependents) {
             await JobModel.findByIdAndUpdate(dependent, { superior: newJob._id })
         }
+
         return newJob
     }
 
-    exports.edit = async (id, job) => {
+    exports.edit = async (id, job,jobDetail) => {
         //console.log(job)
-        const { dependents, ...values } = job
+        const { dependents, ...values } = job  
         for (const dependent of dependents) {
-            await JobModel.findByIdAndUpdate(dependent, { superior: id })
-            
+            await JobModel.findByIdAndUpdate(dependent, { superior: id })   
         }
-        return JobModel.findByIdAndUpdate(id, values, { new: true }).populate("nivel_id")
-    }
-
+        const updateJob = await JobModel.findByIdAndUpdate(id, values, { new: true }).populate("nivel_id")
+        if(updateJob.tipoContrato == 'CONTRATO'){
+         await JobDetailModel.findByIdAndUpdate(updateJob.detalle_id, jobDetail, { new: true })
+        }
+        return await updateJob.populate('detalle_id') 
+      }
 
     exports.getOrganization = async () => {
         const data = await JobModel.aggregate([      

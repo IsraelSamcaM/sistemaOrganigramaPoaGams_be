@@ -6,23 +6,23 @@ const LevelSchema = Schema({
         required: true
     },
     sueldo: {
-        type: String,
+        type: Number,
         required: true
     },
     cajaSalud: {
-        type: String,
+        type: Number,
         required: true
     },
     solidario: {
-        type: String,
+        type: Number,
         required: true
     },
     profecional: {
-        type: String,
+        type: Number,
         required: true
     },
     proVivienda: {
-        type: String,
+        type: Number,
         required: true
     },
    

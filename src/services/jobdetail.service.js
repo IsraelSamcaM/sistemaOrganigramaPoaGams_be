@@ -1,5 +1,5 @@
 const { default: mongoose } = require('mongoose')
-const JobdetailModel = require('../schemas/jobdetail.model')
+const JobDetailModel = require('../schemas/jobDetail.model')
 
 exports.get = async () => {
 return await JobdetailModel.find({}).sort({ _id: -1 })

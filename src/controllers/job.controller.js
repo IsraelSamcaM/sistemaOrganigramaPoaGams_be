@@ -191,22 +191,13 @@ router.delete('/dependent/:id', async (req = request, res = response) => {
         })
     }
 })
-router.put('/:id', async (req = request, res = response) => {
-    try {
-        const job = await jobService.edit(req.params.id, req.body)
-        return res.status(200).json(job)
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({
-            ok: false,
-            message: 'Error in server'
-        })
-    }
-})
+
 router.post('', async (req = request, res = response) => {
     try {
-        const job = await jobService.add(req.body)
-        return res.status(200).json(job)
+        const job = req.body.job
+        const jobDetail = req.body.jobDetail
+        const newJob = await jobService.add(job,jobDetail)
+        return res.status(200).json(newJob)
     } catch (error) {
         console.log(error);
         res.status(500).json({
@@ -215,6 +206,23 @@ router.post('', async (req = request, res = response) => {
         })
     }
 })
+
+router.put('/:id', async (req = request, res = response) => {
+    try {
+        const jobDetail = req.body.jobDetail
+        const job = req.body.job
+        //const job = await jobService.edit(req.params.id, req.body)
+        const newJob = await jobService.edit(req.params.id, job ,jobDetail)
+        return res.status(200).json(newJob)
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,
+            message: 'Error in server'
+        })
+    }
+})
+
 
 router.get('/JoinLevel', jobService.getJoinLevel);
 
