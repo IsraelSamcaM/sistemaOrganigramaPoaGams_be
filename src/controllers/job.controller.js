@@ -99,6 +99,22 @@ router.get('/totalGlobalItems', async (req = request, res = response) => {
     }
 })
 
+router.get('/fullItemsTable', async (req = request, res = response) => {
+    try {
+        const fullItemsTable = await jobService.getItemFullTable()
+        return res.status(200).json({
+            ok: true,   
+            fullItemsTable   
+        })  
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,  
+            message: 'Error in server'
+        })
+    }
+})
+
 router.get('/totalGlobalSecretarias', async (req = request, res = response) => {
     try {
         const globalSecretarias = await jobService.getGlobalSecretaria()
