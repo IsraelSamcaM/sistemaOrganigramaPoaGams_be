@@ -514,7 +514,7 @@
         tagLevel.forEach(element => {
             tags["subLevels"+element.nivel] = {subLevels: element.nivel}
 
-        });
+        }); 
         //console.log(tags)
         return  { organigrama:createOrgChartData(data),tags:tags}
     }
@@ -522,6 +522,7 @@
     const createOrgChartData = (data) => {
         
         const aux = data
+        //console.log(data[0].organigram)
        
         data.forEach((element, i) => {
             element.organigram.forEach((element2, y) => {
@@ -560,7 +561,7 @@
                     //img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
                     title: item.nombre,
                     tags: ["subLevels"+item.nivel_id.nivel],
-                    nivel: item.levelReal,
+                    nivel: ["Nivel: "+item.nivel_id.nivel],
                     estado: item.estado
                 }
             })
@@ -572,7 +573,7 @@
                     name: createFullName(el.officer),
                     //img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
                     title: el.nombre,
-                    nivel: el.nivel_id.nivel,
+                    nivel: ["Nivel: "+el.nivel_id.nivel],
                     estado: el.estado
     
                 }, ...newOrganigram]
