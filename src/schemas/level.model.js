@@ -12,7 +12,7 @@ const LevelSchema = Schema({
     cajaSalud: {
         type: Number,
         required: true
-    },
+    },                                                                     
     solidario: {
         type: Number,
         required: true

@@ -533,9 +533,9 @@
                     // console.log("funcionario actual ",data[i].organigram[y].nombre,"nivel ", data[i].organigram[y].nivel_id.nivel)
                     // console.log("funcionario superior ",levelSuperior.nombre,"nivel ", levelSuperior.nivel_id.nivel)
                     // console.log("nuevo nivel nivel ", element2.nivel_id.nivel-levelSuperior.nivel_id.nivel)
-                    data[i].organigram[y].levelReal=element2.nivel_id.nivel
+                    //data[i].organigram[y].levelReal=element2.nivel_id.nivel
                     
-                    data[i].organigram[y].nivel_id.nivel=element2.nivel_id.nivel-levelSuperior.nivel_id.nivel
+                    //data[i].organigram[y].nivel_id.nivel=element2.nivel_id.nivel-levelSuperior.nivel_id.nivel
                 
                     //console.log(data[i].organigram[y])
                 }
@@ -559,7 +559,8 @@
                     pid: item.superior,
                     name: createFullName(item.officer),
                     //img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
-                    title: item.nombre,
+                    //title: item.nombre,
+                    title: createNameJob(item.nombre , item.tipoContrato),
                     tags: ["subLevels"+item.nivel_id.nivel],
                     nivel: ["Nivel: "+item.nivel_id.nivel],
                     estado: item.estado
@@ -572,7 +573,8 @@
                     id: el._id,
                     name: createFullName(el.officer),
                     //img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
-                    title: el.nombre,
+                    //title: el.nombre,
+                    title: createNameJob(el.nombre , el.tipoContrato),
                     nivel: ["Nivel: "+el.nivel_id.nivel],
                     estado: el.estado
     
@@ -586,6 +588,11 @@
         if (!officer) return 'Sin funcionario'
         return [officer.nombre, officer.paterno, officer.materno].filter(Boolean).join(" ");
     }
+
+    const createNameJob = (nombre, tipoContrato) => {
+      if (tipoContrato == 'CONTRATO') return [nombre + " (C)"]
+      return [nombre]
+  }
 
     exports.getJoinLevel = async () => {
         try {
