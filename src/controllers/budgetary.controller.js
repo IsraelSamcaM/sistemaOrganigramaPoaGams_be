@@ -6,6 +6,7 @@ const budgetaryService = require('../services/budgetary.service')
 router.get('', async (req = request, res = response) => {
     try {
         const budgetarys = await budgetaryService.get()
+        //console.log(budgetarys)
         return res.status(200).json({
             ok: true,   
             budgetarys

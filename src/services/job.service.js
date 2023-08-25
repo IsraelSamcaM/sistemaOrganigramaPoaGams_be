@@ -6,14 +6,14 @@
 
 
     exports.get = async () => {
-    const data =await JobModel.find({tipoContrato: "CONTRATO"}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id')
-    //console.log(data)
-    return await JobModel.find({}).sort({ _id: -1}).populate("nivel_id").populate("detalle_id")
+      const data =await JobModel.find({tipoContrato: "CONTRATO"}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id')
+      //console.log(data)
+      return await JobModel.find({}).sort({ _id: -1}).populate("nivel_id").populate("detalle_id")
     }
     
     exports.search = async (text) => {
         const regex = new RegExp(text, 'i')
-        return JobModel.find({ nombre: regex }).populate("nivel_id")
+        return JobModel.find({ nombre: regex }).populate("nivel_id").populate("detalle_id")
     }
     
     /*             todo completo de la tabla  de items          */

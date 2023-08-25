@@ -13,12 +13,21 @@ const BudgetarySchema = Schema({
     },
     fuenteFinanciamiento:{
         type: Number,
-        required: true,
-       
+        required: true
     },    
     organismoFinanciador: {
         type: Number,
-        required: true,
+        required: true, 
+        uppercase: true
+    },
+    tipoGasto: {
+        type: String,
+        required: true, 
+        uppercase: true
+    },
+    objetivo: {
+        type: String,
+        required: true, 
         uppercase: true
     },
     activo: {
@@ -31,4 +40,4 @@ BudgetarySchema.method('toJSON', function () {
     const { __v, ...object } = this.toObject()
     return object
 })
-module.exports = model('partidasPresupuestarias', BudgetarySchema)
+module.exports = model('partidas', BudgetarySchema)
