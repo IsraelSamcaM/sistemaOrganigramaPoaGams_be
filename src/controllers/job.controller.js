@@ -18,6 +18,22 @@ router.get('', async (req = request, res = response) => {
         })
     }
 })
+
+router.get('/noOrganigram', async (req = request, res = response) => {
+    try {
+        const jobs = await jobService.getNoOrganigram()
+        return res.status(200).json({
+            ok: true,   
+            jobs
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,
+            message: 'Error in server'
+        })
+    }
+})
 ///metodo de escala salarial 
 router.get('/escala', async (req = request, res = response) => {
     try {
@@ -132,9 +148,10 @@ router.get('/totalGlobalSecretarias', async (req = request, res = response) => {
 })
 
 
+
 router.get('/:text', async (req = request, res = response) => {
     try {
-        const jobs = await jobService.search(req.params.text)
+        const jobs = await jobService.search(req.params.text, req.params.level)
         return res.status(200).json({
             ok: true,
             jobs
@@ -157,7 +174,7 @@ router.get('/search/job/officer/:text', async (req = request, res = response) =>
             ok: false,
             message: 'Error in server'
         })
-    }
+    }   
 })
 router.get('/organization/data', async (req = request, res = response) => {
     try {

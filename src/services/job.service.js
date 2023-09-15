@@ -10,13 +10,27 @@
       //console.log(data)
       return await JobModel.find({}).sort({ _id: -1}).populate("nivel_id").populate("detalle_id")
     }
-    
-    exports.search = async (text) => {
-        const regex = new RegExp(text, 'i')
-        return JobModel.find({ nombre: regex }).populate("nivel_id").populate("detalle_id")
+
+    exports.getNoOrganigram = async () => {
+      const data =await JobModel.find({$and: [{isRoot: false},{superior: null}]}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id')
+      //console.log(data)
+      return data
     }
     
-    /*             todo completo de la tabla  de items          */
+    exports.search = async (text, level) => {
+        const regex = new RegExp(text, 'i')
+        const regexLevel = new RegExp(level, 'i')
+        const consult = JobModel.find({$and:[{nombre: regex}]} ).populate("nivel_id").populate("detalle_id")
+        
+        if(text=="noneLevel"){
+          consult = JobModel.find({$and:[{nombre: regex}]} ).populate("nivel_id").populate("detalle_id")
+        }else if(text== "nondeSecretaria"){
+          consult = JobModel.find({$and:[{nombre: regex},{nivel_: regexLevel}]} ).populate("nivel_id").populate("detalle_id")          
+        }
+        return consult
+    }
+    
+    /*       todo completo de la tabla  de items      */
     exports.getItemFullTable= async () => {
         const data = await JobModel.aggregate([
           {
@@ -515,45 +529,59 @@
             tags["subLevels"+element.nivel] = {subLevels: element.nivel}
 
         }); 
-        //console.log(tags)
-        return  { organigrama:createOrgChartData(data),tags:tags}
+        //console.log(data)
+        return  { organigrama:createOrgChartData2(data),tags:tags}
     }
     
+    exports.getOrganization2 = async () => {
+      const data = await JobModel.aggregate([      
+          {
+              $match: { isRoot: true },
+          },  
+          {
+              $graphLookup: {
+                  from: 'cargos',
+                  startWith: '$_id',
+                  connectFromField: '_id',
+                  connectToField: 'superior',
+                  as: 'organigram',
+              },
+          },
+          
+      ])
+      for (const element of data) {
+          const superiorOfficer = await OfficerModel.findOne({ cargo: element._id })
+          element.officer = superiorOfficer
+          const nivelSuperiorOfficer = await LevelModel.findOne({ _id: element.nivel_id })
+          element.nivel_id= nivelSuperiorOfficer
+          for (const [index, dependents] of element.organigram.entries()) {
+              const dependentOfficer = await OfficerModel.findOne({ cargo: dependents._id })
+              const subNivel = await LevelModel.findOne({ _id: dependents.nivel_id })
+              element.organigram[index].nivel_id = subNivel
+          }
+          
+      }
+      //console.log(data[0].organigram)
+      const tagLevel=await LevelModel.find({}).select("nivel").sort({nivel:1})
+      let tags ={}
+      tagLevel.forEach(element => {
+          tags["subLevels"+element.nivel] = {subLevels: element.nivel}
+
+      }); 
+      //console.log(tags)
+      return  { organigrama:createOrgChartData2(data),tags:tags}
+    }
+
     const createOrgChartData = (data) => {
         
         const aux = data
-        //console.log(data[0].organigram)
-       
-        data.forEach((element, i) => {
-            element.organigram.forEach((element2, y) => {
-                
-                let levelSuperior = element.organigram.find(sup=>sup._id.toString()==element2.superior.toString())
-                
-                if(levelSuperior!=undefined ){
-                    // console.log("funcionario actual ",data[i].organigram[y].nombre,"nivel ", data[i].organigram[y].nivel_id.nivel)
-                    // console.log("funcionario superior ",levelSuperior.nombre,"nivel ", levelSuperior.nivel_id.nivel)
-                    // console.log("nuevo nivel nivel ", element2.nivel_id.nivel-levelSuperior.nivel_id.nivel)
-                    //data[i].organigram[y].levelReal=element2.nivel_id.nivel
-                    
-                    //data[i].organigram[y].nivel_id.nivel=element2.nivel_id.nivel-levelSuperior.nivel_id.nivel
-                
-                    //console.log(data[i].organigram[y])
-                }
-            });          
-        });
-        data.forEach((element, i) => {
-            element.organigram.forEach((element2, y) => {
-              //console.log(element2)
-                
-            });          
-        });
-
-                
         
+        data.forEach((element, i) => {
+            element.organigram.forEach((element2, y) => {               
+            });          
+        });
         const newData = data.map(el => {    
-
-            const newOrganigram = el.organigram.map(item => {       
-                               
+            const newOrganigram = el.organigram.map(item => {                    
                 return {
                     id: item._id,
                     pid: item.superior,
@@ -581,20 +609,71 @@
                 }, ...newOrganigram]
             }
         })
+        console.log(newData)
         return newData
     }
 
+    const createOrgChartData2 = (data) => {
+        
+      data.forEach((element, i) => {
+          element.organigram.forEach((element2, y) => {               
+          });          
+      });
+      const newData = data.map(el => {    
+          const newOrganigram = el.organigram.map(item => {                    
+              return {
+                  id: item._id,
+                  pid: item.superior,
+                  name: createFullName(item.officer),
+                  title: createNameJob(item.nombre , item.tipoContrato),
+                  nivel: "Nivel: "+item.nivel_id.nivel,
+                  estado: item.estado,
+                  backgroundColor: asignarColor(item.estado),
+              }
+          })
+          return {  
+              name: el.nombre,
+              data: [{
+                  id: el._id,
+                  name: createFullName(el.officer),
+                  title: createNameJob(el.nombre , el.tipoContrato),
+                  nivel: "Nivel: "+el.nivel_id.nivel,
+                  estado: el.estado,
+                  backgroundColor: asignarColor(el.estado),
+  
+              }, ...newOrganigram]
+          }
+      })
+      console.log(newData)
+      return newData
+  }
+
+    
     const createFullName = (officer) => {
         if (!officer) return 'Sin funcionario'
-        return [officer.nombre, officer.paterno, officer.materno].filter(Boolean).join(" ");
+        return officer.nombre, officer.paterno, officer.materno.filter(Boolean).join(" ");
     }
 
     const createNameJob = (nombre, tipoContrato) => {
-      if (tipoContrato == 'CONTRATO') return [nombre + " (C)"]
-      return [nombre]
-  }
+      if (tipoContrato == 'CONTRATO') return nombre + " (C)"
+      return nombre
+    }
 
-    exports.getJoinLevel = async () => {
+    const asignarColor = (estado) => {
+      const colores = {
+        'EVENTUAL': "#93CDDD",
+        'ITEM': "#DDE2CD",
+        'ASCENSO': "#B7FD71",
+        'CREACION': "#799540",
+        'REUBICACION': "#FFFF00",
+        'DESCENSO': "#F2DCDA",
+        'ELIMINACION': "#FF0000"
+      };
+      return colores[estado] || "#000000";
+    }
+
+
+  exports.getJoinLevel = async () => {
         try {
           const job = await JobModel.aggregate([
             {
