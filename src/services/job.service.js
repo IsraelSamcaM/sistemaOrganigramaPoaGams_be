@@ -744,7 +744,7 @@
               }, ...newOrganigram]
           }
       })
-      console.log(newData)
+      //console.log(newData)
       return newData
   }
 
