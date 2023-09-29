@@ -79,6 +79,79 @@
       return data;    
   }
 
+  
+/*   todo completo de la tabla  de eventuales    */
+  exports.getEventualFullTable = async () => {
+    const data = await JobModel.aggregate([
+      {
+        $match: {
+          tipoContrato: "CONTRATO",
+          estado: { $ne: "ELIMINACION" }
+        }
+      },
+      {
+        $lookup: {
+          from: "cargosdetalles",
+          localField: "detalle_id",
+          foreignField: "_id",
+          as: "detalle"
+        }
+      },
+      {
+        $lookup: {
+          from: "niveles",
+          localField: "nivel_id",
+          foreignField: "_id",
+          as: "nivel"
+        }
+      },
+      {
+        $unwind: "$detalle"
+      },
+      {
+        $unwind: "$nivel"
+      },
+      {
+        $project: {
+          _id: 0,
+          partidaPresupuestaria: "$detalle.partidaPresupuestaria",
+          objetivoPuesto: "$detalle.objetivoPuesto",
+          secretaria: 1,
+          nivel: "$nivel.nivel",
+          denominacionPuesto: "$detalle.denominacionPuesto",
+          nombre: 1,
+          tipoContrato: 1,
+          estado: 1,
+          sueldoMensual: "$nivel.sueldo",
+          tipoGasto: "$detalle.tipoGasto",
+          fuenteFinanciamiento: "$detalle.fuenteFinanciamiento",
+          organismoFinanciador: "$detalle.organismoFinanciador",
+          duracionContrato: "$detalle.duracionContrato",
+          casos: "$detalle.casos",
+          sueldoAnual: { $multiply: ["$nivel.sueldo", 12] },
+          Aguinaldo: "$nivel.sueldo",
+          CNS: { $multiply: ["$nivel.sueldo", "$nivel.cajaSalud", 12] },
+          AporteSolidario: { $multiply: ["$nivel.sueldo", "$nivel.solidario", 12] },
+          AFP: { $multiply: ["$nivel.sueldo", "$nivel.profecional", 12] },
+          proVivienda: { $multiply: ["$nivel.sueldo", "$nivel.proVivienda", 12] }
+        }
+      },
+      {
+        $addFields: {
+          TotalAportes: { $sum: ["$CNS", "$AporteSolidario", "$AFP", "$proVivienda"] }
+        }
+      },
+      {
+        $addFields: {
+          Total: { $sum: ["$sueldoAnual", "$Aguinaldo", "$TotalAportes"] }
+        }
+      }
+    ]);
+    //console.log(data)
+    return data;
+  }
+
+
     
   exports.getEscalaSalarial= async () => {
         const data = await JobModel.aggregate([
@@ -465,35 +538,62 @@
         return JobModel.findByIdAndUpdate(idDependentJob, { superior: null })
     }
 
-    exports.add = async (job,jobDetail) => {
-        const { dependents, ...values } = job
-        if(job.tipoContrato == 'CONTRATO'){
-          const createdJobDetail = new JobDetailModel(jobDetail)
-          const newJobdetail = await createdJobDetail.save()
-          values.detalle_id = newJobdetail._id 
-        }
-        const createdJob = new JobModel(values)
-        const newJob = await createdJob.save()
-        for (const dependent of dependents) {
-            await JobModel.findByIdAndUpdate(dependent, { superior: newJob._id })
-        }
-
-        return newJob
+    exports.add = async (job, jobDetail) => {
+      const { dependents, ...values } = job
+      if (job.tipoContrato == 'CONTRATO') {
+        jobDetail.casos = parseInt(jobDetail.casos)
+        jobDetail.duracionContrato = parseInt(jobDetail.duracionContrato)
+        jobDetail.organismoFinanciador = parseInt(jobDetail.organismoFinanciador)
+        jobDetail.fuenteFinanciamiento = parseInt(jobDetail.fuenteFinanciamiento)
+        const createdJobDetail = new JobDetailModel(jobDetail)
+        const newJobdetail = await createdJobDetail.save()
+        values.detalle_id = newJobdetail._id
+      }
+      const createdJob = new JobModel(values)
+      const newJob = await createdJob.save()
+      for (const dependent of dependents) {
+        await JobModel.findByIdAndUpdate(dependent, { superior: newJob._id })
+      }
+    
+      return newJob
     }
 
-    exports.edit = async (id, job,jobDetail) => {
-        //console.log(job)
-        const { dependents, ...values } = job  
-        for (const dependent of dependents) {
-            await JobModel.findByIdAndUpdate(dependent, { superior: id })   
-        }
-        const updateJob = await JobModel.findByIdAndUpdate(id, values, { new: true }).populate("nivel_id")
-        if(updateJob.tipoContrato == 'CONTRATO'){
-         await JobDetailModel.findByIdAndUpdate(updateJob.detalle_id, jobDetail, { new: true })
-        }
-        return await updateJob.populate('detalle_id') 
+    exports.edit = async (id, job, jobDetail) => {
+      const { dependents, ...values } = job
+      const jobDB = await JobModel.findById(id)
+      for (const dependent of dependents) {
+        await JobModel.findByIdAndUpdate(dependent, { superior: id })
       }
-
+      if (jobDB.tipoContrato === 'CONTRATO' && job.tipoContrato === 'ITEM') {
+        await JobDetailModel.findByIdAndDelete(jobDB.detalle_id)
+      }
+      else if (jobDB.tipoContrato === 'ITEM' && job.tipoContrato === 'CONTRATO') {
+        jobDetail.casos = parseInt(jobDetail.casos)
+        jobDetail.duracionContrato = parseInt(jobDetail.duracionContrato)
+        jobDetail.organismoFinanciador = parseInt(jobDetail.organismoFinanciador)
+        jobDetail.fuenteFinanciamiento = parseInt(jobDetail.fuenteFinanciamiento)
+        const createdJobDetail = new JobDetailModel(jobDetail)
+        const newJobdetail = await createdJobDetail.save()
+        job.detalle_id = newJobdetail._id
+      }
+      else {
+        if (jobDB.tipoContrato === 'CONTRATO') {
+          if (!jobDB.detalle_id) {
+            jobDetail.casos = parseInt(jobDetail.casos)
+            jobDetail.duracionContrato = parseInt(jobDetail.duracionContrato)
+            jobDetail.organismoFinanciador = parseInt(jobDetail.organismoFinanciador)
+            jobDetail.fuenteFinanciamiento = parseInt(jobDetail.fuenteFinanciamiento)
+            const createdJobDetail = new JobDetailModel(jobDetail)
+            const newJobdetail = await createdJobDetail.save()
+            job.detalle_id = newJobdetail._id
+          }
+         
+        }
+      }
+      await JobDetailModel.findByIdAndUpdate(jobDB.detalle_id,jobDetail )
+      return await JobModel.findByIdAndUpdate(id, job, { new: true }).populate("nivel_id").populate('detalle_id')
+    }
+    
     exports.getOrganization = async () => {
         const data = await JobModel.aggregate([      
             {
@@ -609,7 +709,7 @@
                 }, ...newOrganigram]
             }
         })
-        console.log(newData)
+        //console.log(newData)
         return newData
     }
 
@@ -667,6 +767,7 @@
         'CREACION': "#799540",
         'REUBICACION': "#FFFF00",
         'DESCENSO': "#F2DCDA",
+        'DENOMINACION': "#ff8000",
         'ELIMINACION': "#FF0000"
       };
       return colores[estado] || "#000000";

@@ -3,7 +3,7 @@ const { default: mongoose } = require('mongoose')
 const BudgetaryModel = require('../schemas/budgetary.model')
 
 exports.get = async () => {
-return await BudgetaryModel.find({activo: true}).sort({ _id: -1 })
+return await BudgetaryModel.find({}).sort({ _id: -1 })
 }
 
 exports.search = async (text) => {

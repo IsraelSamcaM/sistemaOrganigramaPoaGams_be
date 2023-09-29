@@ -4,6 +4,7 @@ const JobDetailModel = require('../schemas/jobDetail.model')
 exports.get = async () => {
 return await JobdetailModel.find({}).sort({ _id: -1 })
 }
+
 exports.search = async (text) => {
     const regex = new RegExp(text, 'i')
     return JobdetailModel.find({ nombre: regex })
