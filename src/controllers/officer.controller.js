@@ -6,7 +6,7 @@ router.get('', async (req = request, res = response) => {
     try {
         const officers = await funcionarioService.get()
         return res.status(200).json({
-            ok: true,
+            ok: true,   
             officers
         })
     } catch (error) {

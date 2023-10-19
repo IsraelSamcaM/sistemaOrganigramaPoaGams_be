@@ -165,9 +165,9 @@ router.get('/totalGlobalSecretarias', async (req = request, res = response) => {
 
 
 
-router.get('/:text', async (req = request, res = response) => {
+router.get('/:level', async (req = request, res = response) => {
     try {
-        const jobs = await jobService.search(req.params.text, req.params.level)
+        const jobs = await jobService.search(req.params.level)
         return res.status(200).json({
             ok: true,
             jobs
@@ -180,6 +180,39 @@ router.get('/:text', async (req = request, res = response) => {
         })
     }
 })
+
+router.get('/fullCombo/:level/:estado', async (req = request, res = response) => {
+
+    try {
+        const jobs = await jobService.searcFullCombo(req.params.level, req.params.estado)
+        return res.status(200).json({
+            ok: true,
+            jobs
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,
+            message: 'Error in server'
+        })
+    }
+})
+
+router.get('/search/:text', async (req = request, res = response) => {
+    try {
+        const jobs = await jobService.searchWithText(req.params.text)
+        return res.status(200).json({
+            ok: true,   
+            jobs
+        })
+    } catch (error) {
+        res.status(500).json({
+            ok: false,
+            message: 'Error in server'
+        })
+    }
+})
+
 router.get('/search/job/officer/:text', async (req = request, res = response) => {
     try {
         const jobs = await jobService.searchJobForUser(req.params.text)
@@ -204,6 +237,7 @@ router.get('/organization/data', async (req = request, res = response) => {
         })
     }
 })
+
 router.get('/search/dependents/:text', async (req = request, res = response) => {
     try {
         const jobs = await jobService.searchDependents(req.params.text)

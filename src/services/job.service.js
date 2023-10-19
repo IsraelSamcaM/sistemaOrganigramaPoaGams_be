@@ -6,9 +6,9 @@
 
 
     exports.get = async () => {
-      const data =await JobModel.find({tipoContrato: "CONTRATO"}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id')
+      const data =await JobModel.find({tipoContrato: "CONTRATO"}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id').populate("superior")
       //console.log(data)
-      return await JobModel.find({}).sort({ _id: -1}).populate("nivel_id").populate("detalle_id")
+      return await JobModel.find({}).sort({ _id: -1}).populate("nivel_id").populate("detalle_id").populate("superior")
     }
 
     exports.getNoOrganigram = async () => {
@@ -17,18 +17,66 @@
       return data
     }
     
-    exports.search = async (text, level) => {
-        const regex = new RegExp(text, 'i')
-        const regexLevel = new RegExp(level, 'i')
-        const consult = JobModel.find({$and:[{nombre: regex}]} ).populate("nivel_id").populate("detalle_id")
-        
-        if(text=="noneLevel"){
-          consult = JobModel.find({$and:[{nombre: regex}]} ).populate("nivel_id").populate("detalle_id")
-        }else if(text== "nondeSecretaria"){
-          consult = JobModel.find({$and:[{nombre: regex},{nivel_: regexLevel}]} ).populate("nivel_id").populate("detalle_id")          
+    exports.searcFullCombo = async (level, estado) => {    
+        if(level == "noneLevel"){
+          if(estado == "noneEstado"){
+            ///REVISAAAAR ESTO
+             consult = JobModel.find({$and:[{}]} ).populate("nivel_id").populate("detalle_id").populate("superior")  
+          }if(estado == "habilitado"){
+            consult = JobModel.find({$and:[{ estado: { $ne: "ELIMINACION" } }]} ).populate("nivel_id").populate("detalle_id")
+          }if(estado == "deshabilitado"){ 
+            consult = JobModel.find({$and:[{ estado:"ELIMINACION"}]} ).populate("nivel_id").populate("detalle_id")
+          }
+        }else{
+          if(estado == "noneEstado"){
+            consult = JobModel.find({$and:[{nivel_id:level}]} ).populate("nivel_id").populate("detalle_id")
+          }if(estado == "habilitado"){
+            consult = JobModel.find({$and:[{nivel_id:level},{ estado: { $ne: "ELIMINACION" } }]} ).populate("nivel_id").populate("detalle_id")
+          }if(estado == "deshabilitado"){
+            consult = JobModel.find({$and:[{nivel_id:level},{ estado: "ELIMINACION" }]} ).populate("nivel_id").populate("detalle_id")
+          } 
         }
-        return consult
+        return consult  
     }
+
+    exports.search = async (level) => {    
+      if(level == "noneLevel"){
+          consult = JobModel.find({$and:[{}]} ).populate("nivel_id").populate("detalle_id").populate("superior")  
+      }else{
+        consult = JobModel.find({$and:[{nivel_id:level}]} ).populate("nivel_id").populate("detalle_id")
+      }
+      return consult  
+  }
+
+    exports.searchWithText  = async (text) =>{
+      const regex = new RegExp(text, 'i');
+      const dataPaginated = await JobModel.aggregate([
+          {
+              $match: {
+                  $or: [
+                      { 'nombre': regex },
+                      { 'secretaria': regex }
+                  ]
+              }
+          },
+          {
+            $lookup: {
+                from: 'niveles', 
+                localField: 'nivel_id', 
+                foreignField: '_id', 
+                as: 'nivel_id' 
+            }
+          },
+          {
+            $unwind: {
+                path: "$nivel_id",
+              
+            }
+          },
+          { $sort: { _id: -1 } }
+      ]);
+      return dataPaginated;
+    } 
     
     /*       todo completo de la tabla  de items      */
     exports.getItemFullTable= async () => {
@@ -590,8 +638,11 @@
          
         }
       }
+      if (jobDB.superior && !job.superior) {
+        await JobModel.findByIdAndUpdate(jobDB._id, { $unset: { superior: 1 } })
+      }
       await JobDetailModel.findByIdAndUpdate(jobDB.detalle_id,jobDetail )
-      return await JobModel.findByIdAndUpdate(id, job, { new: true }).populate("nivel_id").populate('detalle_id')
+      return await JobModel.findByIdAndUpdate(id, job, { new: true }).populate("nivel_id").populate('detalle_id').populate("superior")
     }
     
     exports.getOrganization = async () => {
@@ -615,12 +666,13 @@
             element.officer = superiorOfficer
             const nivelSuperiorOfficer = await LevelModel.findOne({ _id: element.nivel_id })
             element.nivel_id= nivelSuperiorOfficer
+
             for (const [index, dependents] of element.organigram.entries()) {
                 const dependentOfficer = await OfficerModel.findOne({ cargo: dependents._id })
+                element.organigram[index].officer = dependentOfficer
                 const subNivel = await LevelModel.findOne({ _id: dependents.nivel_id })
                 element.organigram[index].nivel_id = subNivel
-            }
-            
+            }            
         }
         //console.log(data[0].organigram)
         const tagLevel=await LevelModel.find({}).select("nivel").sort({nivel:1})
@@ -744,15 +796,16 @@
               }, ...newOrganigram]
           }
       })
-      //console.log(newData)
+      //console.log(newDatA)
       return newData
   }
 
     
     const createFullName = (officer) => {
         if (!officer) return 'Sin funcionario'
-        return officer.nombre, officer.paterno, officer.materno.filter(Boolean).join(" ");
+        return [officer.nombre, officer.paterno, officer.materno].filter(Boolean).join(" ");
     }
+
 
     const createNameJob = (nombre, tipoContrato) => {
       if (tipoContrato == 'CONTRATO') return nombre + " (C)"
@@ -768,7 +821,7 @@
         'REUBICACION': "#FFFF00",
         'DESCENSO': "#F2DCDA",
         'DENOMINACION': "#ff8000",
-        'ELIMINACION': "#FF0000"
+        'ELIMINACION': "#F58B82 "
       };
       return colores[estado] || "#000000";
     }

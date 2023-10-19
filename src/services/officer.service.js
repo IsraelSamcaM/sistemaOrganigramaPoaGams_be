@@ -1,5 +1,5 @@
 const FuncionarioModel = require('../schemas/officer.model')
-//hola
+
 exports.get = async () => {
     return await FuncionarioModel.find({}).populate('cargo', 'nombre').sort({ _id: -1 })
 }
