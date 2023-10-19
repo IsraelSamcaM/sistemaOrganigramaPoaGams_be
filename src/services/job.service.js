@@ -18,25 +18,22 @@
     }
     
     exports.searcFullCombo = async (level, estado) => {    
-        if(level == "noneLevel"){
-          if(estado == "noneEstado"){
-            ///REVISAAAAR ESTO
-             consult = JobModel.find({$and:[{}]} ).populate("nivel_id").populate("detalle_id").populate("superior")  
-          }if(estado == "habilitado"){
-            consult = JobModel.find({$and:[{ estado: { $ne: "ELIMINACION" } }]} ).populate("nivel_id").populate("detalle_id")
-          }if(estado == "deshabilitado"){ 
-            consult = JobModel.find({$and:[{ estado:"ELIMINACION"}]} ).populate("nivel_id").populate("detalle_id")
-          }
-        }else{
-          if(estado == "noneEstado"){
-            consult = JobModel.find({$and:[{nivel_id:level}]} ).populate("nivel_id").populate("detalle_id")
-          }if(estado == "habilitado"){
-            consult = JobModel.find({$and:[{nivel_id:level},{ estado: { $ne: "ELIMINACION" } }]} ).populate("nivel_id").populate("detalle_id")
-          }if(estado == "deshabilitado"){
-            consult = JobModel.find({$and:[{nivel_id:level},{ estado: "ELIMINACION" }]} ).populate("nivel_id").populate("detalle_id")
-          } 
-        }
-        return consult  
+      const query = {};
+      
+      if (estado === "habilitado") {
+        query.estado = { $ne: "ELIMINACION" };
+      } else if (estado === "deshabilitado") {
+        query.estado = "ELIMINACION";
+      }
+    
+      if (level !== "noneLevel") {
+        query.nivel_id = level;
+      }
+    
+      const populates = ["nivel_id", "detalle_id"];
+      const consult = JobModel.find(query).populate(populates).populate("superior");
+    
+      return consult;
     }
 
     exports.search = async (level) => {    

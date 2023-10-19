@@ -4,12 +4,14 @@ const JobController = require('../src/controllers/job.controller')
 const LevelController=require('../src/controllers/level.controller')
 const JobdetailController=require('../src/controllers/jobdetail.controller')
 const BudgetaryController=require('../src/controllers/budgetary.controller')
+const DependenceController=require('../src/controllers/dependence.controller')
+ 
 
 router.use('/officers', OfficerController)
 router.use('/jobs', JobController)
 router.use('/levels', LevelController)
 router.use('/jobdetails', JobdetailController)
 router.use('/Budgetarys', BudgetaryController)
-
+router.use('/depedences', DependenceController)
 module.exports = router
 
