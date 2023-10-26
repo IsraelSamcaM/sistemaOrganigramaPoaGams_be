@@ -8,8 +8,8 @@ const DependenceModel = Schema({
     },
     depende_de: {
         type: Schema.Types.ObjectId,
-        ref: 'dependencias',
-        default: null
+        ref: 'dependencias'
+        
     }, 
     sigla: {
         type: String,
@@ -25,13 +25,11 @@ const DependenceModel = Schema({
 
     encargado: {
         type: Schema.Types.ObjectId,
-        ref: 'cargos',
-        default: null
+        ref: 'cargos'
     }, 
     estado: {
-        type: String,
-        required: true,
-        uppercase: true
+        type: Boolean,
+        required: true
     }
 })
 

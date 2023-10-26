@@ -28,3 +28,15 @@ exports.delete = async (id_budgetary) => {
     if (!budgetaryDB) throw ({ status: 400, message: 'La partida presupuestaria no existe' });
     return await BudgetaryModel.findByIdAndUpdate(id_budgetary, { new: true })
 }
+
+exports.searchPartidaForJob = async (text) => {
+    const regex = new RegExp(text, 'i')
+    return await BudgetaryModel.aggregate([
+        {
+            $match: {
+                nombrePartida: regex
+            }
+        },
+        { $limit: 5}
+    ])
+}

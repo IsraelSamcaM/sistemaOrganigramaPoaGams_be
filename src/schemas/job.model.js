@@ -6,11 +6,19 @@ const JobSchema = Schema({
         required: true,
         uppercase: true
     },
+
+    denominacion: {
+        type: String,
+        required: false,
+        uppercase: true
+    },
+
     superior: {
         type: Schema.Types.ObjectId,
         ref: 'cargos',
         default: null
     },
+
     detalle_id:{
         type: Schema.Types.ObjectId,
         ref: 'cargosdetalles',
@@ -22,6 +30,7 @@ const JobSchema = Schema({
         required: true,
         uppercase: true
     },
+
     estado: {
         type: String,
         required: true,
@@ -34,15 +43,30 @@ const JobSchema = Schema({
         uppercase: true
     },
 
-    isRoot: { type: Boolean, default: false },
+    duracion_contrato: {
+        type: Number
+    },
+
+    isRoot: { 
+        type: Boolean, 
+        default: false  
+    },
 
     nivel_id:{
         type: Schema.Types.ObjectId,
-        ref: 'niveles',
-       
+        ref: 'niveles'
     },
 
-    
+    partida_id:{
+        type: Schema.Types.ObjectId,
+        ref: 'partidas'
+    },
+
+    dependencia_id:{
+        type: Schema.Types.ObjectId,
+        ref: 'dependencias' 
+    },
+
 })
 
 JobSchema.method('toJSON', function () {

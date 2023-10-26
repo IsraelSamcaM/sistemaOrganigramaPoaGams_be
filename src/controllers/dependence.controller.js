@@ -74,5 +74,17 @@ router.delete('/:id', async (req = request, res = response) => {
     }
 })
 
+router.get('/search/dependence/:text', async (req = request, res = response) => {
+    try {
+        const dependences = await DependenceService.searchDependenceForDependence(req.params.text)
+        return res.status(200).json(dependences)
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,
+            message: 'Error in server'
+        })
+    }   
+})
 
 module.exports = router

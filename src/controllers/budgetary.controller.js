@@ -35,6 +35,18 @@ router.get('/:text', async (req = request, res = response) => {
     }
 })
 
+router.get('/forjob/:text', async (req = request, res = response) => {
+    try {
+        const budgetarys = await budgetaryService.searchPartidaForJob(req.params.text)
+        return res.status(200).json(budgetarys)
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,
+            message: 'Error in server'
+        })
+    }   
+})
 
 router.put('/:id', async (req = request, res = response) => {
     try {

@@ -6,13 +6,15 @@
 
 
     exports.get = async () => {
-      const data =await JobModel.find({tipoContrato: "CONTRATO"}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id').populate("superior")
+      const data =await JobModel.find({tipoContrato: "CONTRATO"}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id').populate("superior").populate('partida_id')
       //console.log(data)
-      return await JobModel.find({}).sort({ _id: -1}).populate("nivel_id").populate("detalle_id").populate("superior")
+      //console.log(data)
+      return await JobModel.find({}).sort({ _id: -1}).populate("nivel_id").populate("detalle_id").populate("superior").populate('partida_id')
+      //console.log(data) 
     }
 
     exports.getNoOrganigram = async () => {
-      const data =await JobModel.find({$and: [{isRoot: false},{superior: null}]}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id')
+      const data =await JobModel.find({$and: [{isRoot: false},{superior: null}]}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id').populate('partida_id')
       //console.log(data)
       return data
     }
@@ -583,27 +585,20 @@
         return JobModel.findByIdAndUpdate(idDependentJob, { superior: null })
     }
 
-    exports.add = async (job, jobDetail) => {
+    exports.add = async (job) => {
+      console.log(job)
       const { dependents, ...values } = job
-      if (job.tipoContrato == 'CONTRATO') {
-        jobDetail.casos = parseInt(jobDetail.casos)
-        jobDetail.duracionContrato = parseInt(jobDetail.duracionContrato)
-        jobDetail.organismoFinanciador = parseInt(jobDetail.organismoFinanciador)
-        jobDetail.fuenteFinanciamiento = parseInt(jobDetail.fuenteFinanciamiento)
-        const createdJobDetail = new JobDetailModel(jobDetail)
-        const newJobdetail = await createdJobDetail.save()
-        values.detalle_id = newJobdetail._id
-      }
+
       const createdJob = new JobModel(values)
       const newJob = await createdJob.save()
       for (const dependent of dependents) {
         await JobModel.findByIdAndUpdate(dependent, { superior: newJob._id })
       }
-    
+      await JobModel.populate(newJob,'nivel_id').populate(newJob,'partida_id')
       return newJob
     }
 
-    exports.edit = async (id, job, jobDetail) => {
+    exports.edit = async (id, job) => {
       const { dependents, ...values } = job
       const jobDB = await JobModel.findById(id)
       for (const dependent of dependents) {
@@ -612,34 +607,11 @@
       if (jobDB.tipoContrato === 'CONTRATO' && job.tipoContrato === 'ITEM') {
         await JobDetailModel.findByIdAndDelete(jobDB.detalle_id)
       }
-      else if (jobDB.tipoContrato === 'ITEM' && job.tipoContrato === 'CONTRATO') {
-        jobDetail.casos = parseInt(jobDetail.casos)
-        jobDetail.duracionContrato = parseInt(jobDetail.duracionContrato)
-        jobDetail.organismoFinanciador = parseInt(jobDetail.organismoFinanciador)
-        jobDetail.fuenteFinanciamiento = parseInt(jobDetail.fuenteFinanciamiento)
-        const createdJobDetail = new JobDetailModel(jobDetail)
-        const newJobdetail = await createdJobDetail.save()
-        job.detalle_id = newJobdetail._id
-      }
-      else {
-        if (jobDB.tipoContrato === 'CONTRATO') {
-          if (!jobDB.detalle_id) {
-            jobDetail.casos = parseInt(jobDetail.casos)
-            jobDetail.duracionContrato = parseInt(jobDetail.duracionContrato)
-            jobDetail.organismoFinanciador = parseInt(jobDetail.organismoFinanciador)
-            jobDetail.fuenteFinanciamiento = parseInt(jobDetail.fuenteFinanciamiento)
-            const createdJobDetail = new JobDetailModel(jobDetail)
-            const newJobdetail = await createdJobDetail.save()
-            job.detalle_id = newJobdetail._id
-          }
-         
-        }
-      }
+      
       if (jobDB.superior && !job.superior) {
         await JobModel.findByIdAndUpdate(jobDB._id, { $unset: { superior: 1 } })
       }
-      await JobDetailModel.findByIdAndUpdate(jobDB.detalle_id,jobDetail )
-      return await JobModel.findByIdAndUpdate(id, job, { new: true }).populate("nivel_id").populate('detalle_id').populate("superior")
+      return await JobModel.findByIdAndUpdate(id, job, { new: true }).populate("nivel_id").populate("superior").populate('partida_id')
     }
     
     exports.getOrganization = async () => {

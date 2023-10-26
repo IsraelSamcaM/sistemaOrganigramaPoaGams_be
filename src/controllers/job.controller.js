@@ -225,6 +225,7 @@ router.get('/search/job/officer/:text', async (req = request, res = response) =>
         })
     }   
 })
+
 router.get('/organization/data', async (req = request, res = response) => {
     try {
         const data = await jobService.getOrganization()
@@ -277,9 +278,8 @@ router.delete('/dependent/:id', async (req = request, res = response) => {
 
 router.post('', async (req = request, res = response) => {
     try {
-        const job = req.body.job
-        const jobDetail = req.body.jobDetail
-        const newJob = await jobService.add(job,jobDetail)
+        const job = req.body
+        const newJob = await jobService.add(job)
         return res.status(200).json(newJob)
     } catch (error) {
         console.log(error);
@@ -292,10 +292,9 @@ router.post('', async (req = request, res = response) => {
 
 router.put('/:id', async (req = request, res = response) => {
     try {
-        const jobDetail = req.body.jobDetail
-        const job = req.body.job
+        const job = req.body
         //const job = await jobService.edit(req.params.id, req.body)
-        const newJob = await jobService.edit(req.params.id, job ,jobDetail)
+        const newJob = await jobService.edit(req.params.id, job)
         return res.status(200).json(newJob)
     } catch (error) {
         console.log(error);
