@@ -40,3 +40,20 @@ exports.searchPartidaForJob = async (text) => {
         { $limit: 5}
     ])
 }
+
+exports.searchWithText  = async (text) =>{
+    const regex = new RegExp(text, 'i');
+    const dataPaginated = await BudgetaryModel.aggregate([
+        {
+            $match: {
+                $or: [
+                    { 'codigo': regex },
+                    { 'nombrePartida': regex }
+                ]
+            }
+        },
+
+        { $sort: { _id: -1 } }
+    ]);
+    return dataPaginated;
+  } 

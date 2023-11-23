@@ -6,28 +6,37 @@
 
 
     exports.get = async () => {
-      const data =await JobModel.find({tipoContrato: "CONTRATO"}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id').populate("superior").populate('partida_id')
+      const data =await JobModel.find({tipoContrato: "CONTRATO"}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id').populate("superior").populate('partida_id').populate('dependencia_id') 
       //console.log(data)
       //console.log(data)
-      return await JobModel.find({}).sort({ _id: -1}).populate("nivel_id").populate("detalle_id").populate("superior").populate('partida_id')
+      return await JobModel.find({}).sort({ _id: -1}).populate("nivel_id").populate("detalle_id").populate("superior").populate('partida_id').populate('dependencia_id')
       //console.log(data) 
-    }
-
+    } 
     exports.getNoOrganigram = async () => {
       const data =await JobModel.find({$and: [{isRoot: false},{superior: null}]}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id').populate('partida_id')
       //console.log(data)
       return data
     }
     
-    exports.searcFullCombo = async (level, estado) => {    
+  exports.searcFullCombo = async (level, estado) => {    
       const query = {};
       
       if (estado === "habilitado") {
         query.estado = { $ne: "ELIMINACION" };
       } else if (estado === "deshabilitado") {
         query.estado = "ELIMINACION";
+      } else if (estado === "ascenso") {
+        query.estado = "ASCENSO";
+      } else if (estado === "creacion") {
+        query.estado = "CREACION";
+      } else if (estado === "reubicacion") {
+        query.estado = "REUBICACION";
+      } else if (estado === "descenso") {
+        query.estado = "DESCENSO";
+      }else if (estado === "denominacion") {
+        query.estado = "DENOMINACION";
       }
-    
+      
       if (level !== "noneLevel") {
         query.nivel_id = level;
       }
@@ -36,9 +45,9 @@
       const consult = JobModel.find(query).populate(populates).populate("superior");
     
       return consult;
-    }
+  }
 
-    exports.search = async (level) => {    
+  exports.search = async (level) => {    
       if(level == "noneLevel"){
           consult = JobModel.find({$and:[{}]} ).populate("nivel_id").populate("detalle_id").populate("superior")  
       }else{
@@ -585,33 +594,81 @@
         return JobModel.findByIdAndUpdate(idDependentJob, { superior: null })
     }
 
+    // exports.add = async (job) => {
+    //   console.log(job);
+    //   const {dependents, ...values } = job;
+    
+    //   const createdJob = new JobModel(values);
+    //   const newJob = await createdJob.save();
+    
+    //   for (const dependent of dependents) {
+    //     await JobModel.findByIdAndUpdate(dependent, { superior: newJob._id });
+    //   }
+    
+    //   const populatedJob = await JobModel.findById(newJob._id).populate('nivel_id').populate('partida_id').exec();
+    
+    //   return populatedJob;
+    // };
+    
     exports.add = async (job) => {
-      console.log(job)
-      const { dependents, ...values } = job
-
-      const createdJob = new JobModel(values)
-      const newJob = await createdJob.save()
-      for (const dependent of dependents) {
-        await JobModel.findByIdAndUpdate(dependent, { superior: newJob._id })
+      console.log(job);
+      const { dependents, ...values } = job;
+      if (job.partida_id === '') {
+        delete values.partida_id;
       }
-      await JobModel.populate(newJob,'nivel_id').populate(newJob,'partida_id')
-      return newJob
-    }
+      if (job.duracion_contrato === '') {
+        delete values.duracion_contrato;
+      }
+      if (job.denominacion === '') {
+        delete values.denominacion;
+      }
+      if (job.superior === '') {
+        delete values.denominacion;
+      }
+     
+
+
+      const createdJob = new JobModel(values);
+      const newJob = await createdJob.save();
+      for (const dependent of dependents) {
+        await JobModel.findByIdAndUpdate(dependent, { superior: newJob._id });
+      }
+      const populatedJob = await JobModel.findById(newJob._id).populate('nivel_id').populate('partida_id').populate('dependencia_id').exec();
+      return populatedJob;
+    };
+    
 
     exports.edit = async (id, job) => {
-      const { dependents, ...values } = job
+
+      console.log(job);
+      const { dependents, ...values } = job;
+
+      if (job.partida_id === '') {
+        delete values.partida_id;
+      }
+      if (job.duracion_contrato) {
+        values.duracion_contrato = parseInt(values.duracion_contrato)
+      }
+      if (job.denominacion === '') {
+        delete values.denominacion;
+      }
+      if (job.superior === '') {
+        delete values.superior;
+      }
+     
+      
+
       const jobDB = await JobModel.findById(id)
       for (const dependent of dependents) {
         await JobModel.findByIdAndUpdate(dependent, { superior: id })
       }
       if (jobDB.tipoContrato === 'CONTRATO' && job.tipoContrato === 'ITEM') {
         await JobDetailModel.findByIdAndDelete(jobDB.detalle_id)
-      }
-      
+      }   
       if (jobDB.superior && !job.superior) {
         await JobModel.findByIdAndUpdate(jobDB._id, { $unset: { superior: 1 } })
       }
-      return await JobModel.findByIdAndUpdate(id, job, { new: true }).populate("nivel_id").populate("superior").populate('partida_id')
+      return await JobModel.findByIdAndUpdate(id, values, { new: true }).populate("nivel_id").populate("superior").populate('partida_id').populate('dependencia_id')
     }
     
     exports.getOrganization = async () => {
@@ -632,7 +689,7 @@
         ])
         for (const element of data) {
             const superiorOfficer = await OfficerModel.findOne({ cargo: element._id })
-            element.officer = superiorOfficer
+            element.officer = superiorOfficer 
             const nivelSuperiorOfficer = await LevelModel.findOne({ _id: element.nivel_id })
             element.nivel_id= nivelSuperiorOfficer
 
@@ -820,4 +877,4 @@
         } catch (error) {
           throw new Error('Error getting job with level: ' + error.message);
         }
-    }
+  }

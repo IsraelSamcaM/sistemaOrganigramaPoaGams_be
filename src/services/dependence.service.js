@@ -6,6 +6,19 @@ exports.get = async () => {
 return await DependenceModel.find({}).sort({ _id: -1 }).populate('encargado').populate('depende_de')
 }
 
+//Retorna todas las secretarias
+exports.getBySecretaria = async () => {
+    return await DependenceModel.find({tipo:"SECRETARIA"}).sort({ _id: -1 })
+}
+//retorna dado un id sus dependientes
+exports.getByDependenceId = async (dependenceId) => {
+        return await DependenceModel.find({ depende_de: dependenceId }).sort({ _id: -1 }).populate('encargado').populate('depende_de');
+};
+
+exports.get = async () => {
+    return await DependenceModel.find({}).sort({ _id: -1 }).populate('encargado').populate('depende_de')
+}
+
 exports.search = async (text) => {
     const regex = new RegExp(text, 'i')
     return DependenceModel.find({ nombre: regex })
@@ -48,3 +61,39 @@ exports.searchDependenceForDependence = async (text) => {
         { $limit: 5 }
     ])
 }
+
+exports.searchWithText  = async (text) =>{
+    const regex = new RegExp(text, 'i');
+    const dataPaginated = await DependenceModel.aggregate([
+        {
+            $match: {
+                $or: [
+                    { 'nombre': regex },
+                    { 'sigla': regex }
+                ]
+            }
+        },
+
+        { $sort: { _id: -1 } }
+    ]);
+    return dataPaginated;
+} 
+
+exports.searchWithText  = async (text) =>{
+    const regex = new RegExp(text, 'i');
+    const dataPaginated = await DependenceModel.aggregate([
+        {
+            $match: {
+                $or: [
+                    { 'nombre': regex },
+                    { 'sigla': regex }
+                ]
+            }
+        },
+
+        { $sort: { _id: -1 } }
+    ]);
+    return dataPaginated;
+} 
+
+

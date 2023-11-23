@@ -88,4 +88,19 @@ router.delete('/:id', async (req = request, res = response) => {
 })
 
 
+router.get('/search/:text', async (req = request, res = response) => {
+    try {
+        const budgetarys = await budgetaryService.searchWithText(req.params.text)
+        return res.status(200).json({
+            ok: true,   
+            budgetarys
+        })
+    } catch (error) {
+        res.status(500).json({
+            ok: false,
+            message: 'Error in server'
+        })
+    }
+})
+
 module.exports = router

@@ -9,7 +9,6 @@ const JobSchema = Schema({
 
     denominacion: {
         type: String,
-        required: false,
         uppercase: true
     },
 
@@ -37,12 +36,6 @@ const JobSchema = Schema({
         uppercase: true
     },
 
-    secretaria: {
-        type: String,
-        required: true,
-        uppercase: true
-    },
-
     duracion_contrato: {
         type: Number
     },
@@ -65,8 +58,20 @@ const JobSchema = Schema({
     dependencia_id:{
         type: Schema.Types.ObjectId,
         ref: 'dependencias' 
-    },
+    },  
 
+    secretaria: {
+        type: String,
+        uppercase: true
+    },
+    jefatura: {
+        type: String,
+        uppercase: true
+    },
+    direccion: {
+        type: String,
+        uppercase: true
+    },
 })
 
 JobSchema.method('toJSON', function () {
