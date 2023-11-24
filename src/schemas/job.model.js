@@ -68,11 +68,12 @@ const JobSchema = Schema({
         type: String,
         uppercase: true
     },
-    direccion: {
+    direccion: {    
         type: String,
         uppercase: true
     },
 })
+
 
 JobSchema.method('toJSON', function () {
     const { __v, ...object } = this.toObject()

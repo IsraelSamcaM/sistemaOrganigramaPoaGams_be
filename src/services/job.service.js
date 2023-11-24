@@ -3,20 +3,36 @@
     const JobModel = require('../schemas/job.model')
     const OfficerModel = require('../schemas/officer.model')
     const LevelModel = require('../schemas/level.model')
+const officerModel = require('../schemas/officer.model')
 
 
-    exports.get = async () => {
-      const data =await JobModel.find({tipoContrato: "CONTRATO"}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id').populate("superior").populate('partida_id').populate('dependencia_id') 
-      //console.log(data)
-      //console.log(data)
-      return await JobModel.find({}).sort({ _id: -1}).populate("nivel_id").populate("detalle_id").populate("superior").populate('partida_id').populate('dependencia_id')
-      //console.log(data) 
-    } 
-    exports.getNoOrganigram = async () => {
+  // exports.get = async () => {
+  //   const data =await JobModel.find({}).sort({ _id: -1}).populate("nivel_id").populate("detalle_id").populate("superior").populate('partida_id').populate('dependencia_id') 
+  //   const dataFuncionarios = await OfficerModel.find({}).sort({ _id: -1})
+  //   console.log(dataFuncionarios)
+  //   return data 
+  // }  
+  
+  exports.get = async () => {
+      const data = await JobModel.find({}).sort({ _id: -1 }).populate("nivel_id").populate("detalle_id").populate("superior").populate('partida_id').populate('dependencia_id');
+      const dataFuncionarios = await OfficerModel.find({}).sort({ _id: -1 }).populate('cargo');  
+      const resultados = [];
+      for (const cargo of data) {
+        const funcionario = dataFuncionarios.find(f => f.cargo && f.cargo.equals(cargo._id)); 
+        const resultado = {
+          ...cargo.toObject(),
+          funcionario: funcionario ? `${funcionario.nombre} ${funcionario.paterno} ${funcionario.materno}` : 'Sin funcionario',
+        };
+        resultados.push(resultado);
+      }
+      //console.log(resultados)
+      return resultados;
+  };
+  
+  exports.getNoOrganigram = async () => {
       const data =await JobModel.find({$and: [{isRoot: false},{superior: null}]}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id').populate('partida_id')
-      //console.log(data)
       return data
-    }
+  }
     
   exports.searcFullCombo = async (level, estado) => {    
       const query = {};
@@ -40,11 +56,21 @@
       if (level !== "noneLevel") {
         query.nivel_id = level;
       }
-    
       const populates = ["nivel_id", "detalle_id"];
-      const consult = JobModel.find(query).populate(populates).populate("superior");
-    
-      return consult;
+      const data = await JobModel.find(query).populate(populates).populate("superior");
+
+      const dataFuncionarios = await OfficerModel.find({}).sort({ _id: -1 }).populate('cargo');  
+      const resultados = [];
+      for (const cargo of data) {
+        const funcionario = dataFuncionarios.find(f => f.cargo && f.cargo.equals(cargo._id)); 
+        const resultado = {
+          ...cargo.toObject(),
+          funcionario: funcionario ? `${funcionario.nombre} ${funcionario.paterno} ${funcionario.materno}` : 'Sin funcionario',
+        };
+        resultados.push(resultado);
+      }
+      //console.log(resultados)
+      return resultados;
   }
 
   exports.search = async (level) => {    
@@ -56,38 +82,50 @@
       return consult  
   }
 
-    exports.searchWithText  = async (text) =>{
+  exports.searchWithText = async (text) => {
       const regex = new RegExp(text, 'i');
-      const dataPaginated = await JobModel.aggregate([
-          {
-              $match: {
-                  $or: [
-                      { 'nombre': regex },
-                      { 'secretaria': regex }
-                  ]
-              }
-          },
-          {
-            $lookup: {
-                from: 'niveles', 
-                localField: 'nivel_id', 
-                foreignField: '_id', 
-                as: 'nivel_id' 
-            }
-          },
-          {
-            $unwind: {
-                path: "$nivel_id",
-              
-            }
-          },
-          { $sort: { _id: -1 } }
+      const data = await JobModel.aggregate([
+        {
+          $match: {
+            $or: [
+              { 'nombre': regex },
+              { 'secretaria': regex }
+            ]
+          }
+        },
+        {
+          $lookup: {
+            from: 'niveles',
+            localField: 'nivel_id',
+            foreignField: '_id',
+            as: 'nivel_id'
+          }
+        },
+        {
+          $unwind: {
+            path: "$nivel_id",
+          }
+        },
+        { $sort: { _id: -1 } }
       ]);
-      return dataPaginated;
-    } 
+
+      const dataFuncionarios = await OfficerModel.find({}).sort({ _id: -1 }).populate('cargo');  
+      const resultados = [];
+      for (const cargo of data) {
+        const funcionario = dataFuncionarios.find(f => f.cargo && f.cargo.equals(cargo._id)); 
+        const resultado = {
+          ...cargo,
+          funcionario: funcionario ? `${funcionario.nombre} ${funcionario.paterno} ${funcionario.materno}` : 'Sin funcionario',
+        };
+        resultados.push(resultado);
+      }
+      //console.log(resultados)
+      return resultados;
+  };
+  
     
     /*       todo completo de la tabla  de items      */
-    exports.getItemFullTable= async () => {
+  exports.getItemFullTable= async () => {
         const data = await JobModel.aggregate([
           {
             $match: {
@@ -147,10 +185,10 @@
       },
       {
         $lookup: {
-          from: "cargosdetalles",
-          localField: "detalle_id",
+          from: "partidas",
+          localField: "partida_id",
           foreignField: "_id",
-          as: "detalle"
+          as: "partida"
         }
       },
       {
@@ -162,7 +200,7 @@
         }
       },
       {
-        $unwind: "$detalle"
+        $unwind: "$partida"
       },
       {
         $unwind: "$nivel"
@@ -170,20 +208,24 @@
       {
         $project: {
           _id: 0,
-          partidaPresupuestaria: "$detalle.partidaPresupuestaria",
-          objetivoPuesto: "$detalle.objetivoPuesto",
+          partidaPresupuestaria: "$partida.nombrePartida",
+          objetivoPuesto: "$partida.objetivo",
           secretaria: 1,
           nivel: "$nivel.nivel",
-          denominacionPuesto: "$detalle.denominacionPuesto",
+
+          denominacion: 1,
+
           nombre: 1,
           tipoContrato: 1,
           estado: 1,
           sueldoMensual: "$nivel.sueldo",
-          tipoGasto: "$detalle.tipoGasto",
-          fuenteFinanciamiento: "$detalle.fuenteFinanciamiento",
-          organismoFinanciador: "$detalle.organismoFinanciador",
-          duracionContrato: "$detalle.duracionContrato",
-          casos: "$detalle.casos",
+          tipoGasto: "$partida.tipoGasto",
+          fuenteFinanciamiento: "$partida.fuenteFinanciamiento",
+          organismoFinanciador: "$partida.organismoFinanciador",
+
+          duracion_contrato: 1,
+          //ya no hay casos
+
           sueldoAnual: { $multiply: ["$nivel.sueldo", 12] },
           Aguinaldo: "$nivel.sueldo",
           CNS: { $multiply: ["$nivel.sueldo", "$nivel.cajaSalud", 12] },
@@ -206,8 +248,6 @@
     //console.log(data)
     return data;
   }
-
-
     
   exports.getEscalaSalarial= async () => {
         const data = await JobModel.aggregate([
@@ -255,9 +295,9 @@
         //console.log(data)
         return data
 
-    }
+  }
     
-    exports.getTotalEscalaSalarial = async () => {
+  exports.getTotalEscalaSalarial = async () => {
         const data = await JobModel.aggregate([
               {
                 $match: {
@@ -308,7 +348,7 @@
             ])
           //console.log(data)
           return data
-    }
+  }
 
     //retorna por partida presupuestaria
     exports.getEscalaSalarialPartidaPresupuestaria = async () => {
@@ -380,10 +420,10 @@
             },
             {
               $lookup: {
-                from: "cargosdetalles",
-                localField: "detalle_id",
+                from: "partidas",
+                localField: "partida_id",
                 foreignField: "_id",
-                as: "detalleInfo"
+                as: "partidas"
               }
             },
             {
@@ -395,10 +435,10 @@
               }
             },
             {
-              $unwind: "$detalleInfo"
+              $unwind: "$partidas"
             },
             {
-              $unwind: "$nivelInfo"
+              $unwind: "$nivelInfo" 
             },
             {
               $group: {
