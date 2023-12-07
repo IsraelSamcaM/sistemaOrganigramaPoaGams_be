@@ -1,18 +1,10 @@
-    const { default: mongoose } = require('mongoose')
-    const JobDetailModel = require('../schemas/jobDetail.model')
-    const JobModel = require('../schemas/job.model')
-    const OfficerModel = require('../schemas/officer.model')
-    const LevelModel = require('../schemas/level.model')
+const { default: mongoose } = require('mongoose')
+const JobDetailModel = require('../schemas/jobDetail.model')
+const JobModel = require('../schemas/job.model')
+const OfficerModel = require('../schemas/officer.model')
+const LevelModel = require('../schemas/level.model')
 const officerModel = require('../schemas/officer.model')
 
-
-  // exports.get = async () => {
-  //   const data =await JobModel.find({}).sort({ _id: -1}).populate("nivel_id").populate("detalle_id").populate("superior").populate('partida_id').populate('dependencia_id') 
-  //   const dataFuncionarios = await OfficerModel.find({}).sort({ _id: -1})
-  //   console.log(dataFuncionarios)
-  //   return data 
-  // }  
-  
   exports.get = async () => {
       const data = await JobModel.find({}).sort({ _id: -1 }).populate("nivel_id").populate("detalle_id").populate("superior").populate('partida_id').populate('dependencia_id');
       const dataFuncionarios = await OfficerModel.find({}).sort({ _id: -1 }).populate('cargo');  
@@ -25,7 +17,6 @@ const officerModel = require('../schemas/officer.model')
         };
         resultados.push(resultado);
       }
-      //console.log(resultados)
       return resultados;
   };
   
@@ -36,7 +27,6 @@ const officerModel = require('../schemas/officer.model')
     
   exports.searcFullCombo = async (level, estado) => {    
       const query = {};
-      
       if (estado === "habilitado") {
         query.estado = { $ne: "ELIMINACION" };
       } else if (estado === "deshabilitado") {
@@ -52,13 +42,12 @@ const officerModel = require('../schemas/officer.model')
       }else if (estado === "denominacion") {
         query.estado = "DENOMINACION";
       }
-      
+
       if (level !== "noneLevel") {
         query.nivel_id = level;
       }
       const populates = ["nivel_id", "detalle_id"];
       const data = await JobModel.find(query).populate(populates).populate("superior");
-
       const dataFuncionarios = await OfficerModel.find({}).sort({ _id: -1 }).populate('cargo');  
       const resultados = [];
       for (const cargo of data) {
@@ -69,7 +58,6 @@ const officerModel = require('../schemas/officer.model')
         };
         resultados.push(resultado);
       }
-      //console.log(resultados)
       return resultados;
   }
 
@@ -119,7 +107,6 @@ const officerModel = require('../schemas/officer.model')
         };
         resultados.push(resultado);
       }
-      //console.log(resultados)
       return resultados;
   };
   
@@ -351,7 +338,7 @@ const officerModel = require('../schemas/officer.model')
   }
 
     //retorna por partida presupuestaria
-    exports.getEscalaSalarialPartidaPresupuestaria = async () => {
+  exports.getEscalaSalarialPartidaPresupuestaria = async () => {
       const data = await JobModel.aggregate([
             {
               $match: {
@@ -472,7 +459,6 @@ const officerModel = require('../schemas/officer.model')
           return data
     }
 
-    
   //retorna por el total global de items 
   exports.getItemsGlobalTotal = async () => {
     const data = await JobModel.aggregate([
@@ -538,7 +524,6 @@ const officerModel = require('../schemas/officer.model')
       return data
   }
 
-    
   //retorna por el total global por secretarias 
   exports.getGlobalSecretaria = async () => {
           const data = await JobModel.aggregate([
@@ -621,7 +606,7 @@ const officerModel = require('../schemas/officer.model')
                 }
             }
         ])
-    }
+  }
 
     exports.searchDependents = async (text) => {
         const regex = new RegExp(text, 'i')
@@ -634,22 +619,6 @@ const officerModel = require('../schemas/officer.model')
         return JobModel.findByIdAndUpdate(idDependentJob, { superior: null })
     }
 
-    // exports.add = async (job) => {
-    //   console.log(job);
-    //   const {dependents, ...values } = job;
-    
-    //   const createdJob = new JobModel(values);
-    //   const newJob = await createdJob.save();
-    
-    //   for (const dependent of dependents) {
-    //     await JobModel.findByIdAndUpdate(dependent, { superior: newJob._id });
-    //   }
-    
-    //   const populatedJob = await JobModel.findById(newJob._id).populate('nivel_id').populate('partida_id').exec();
-    
-    //   return populatedJob;
-    // };
-    
     exports.add = async (job) => {
       console.log(job);
       const { dependents, ...values } = job;
@@ -678,25 +647,18 @@ const officerModel = require('../schemas/officer.model')
     };
     
 
-    exports.edit = async (id, job) => {
-
+  exports.edit = async (id, job) => {
       console.log(job);
       const { dependents, ...values } = job;
 
       if (job.partida_id === '') {
-        delete values.partida_id;
-      }
+        delete values.partida_id;}
       if (job.duracion_contrato) {
-        values.duracion_contrato = parseInt(values.duracion_contrato)
-      }
+        values.duracion_contrato = parseInt(values.duracion_contrato)}
       if (job.denominacion === '') {
-        delete values.denominacion;
-      }
+        delete values.denominacion;}
       if (job.superior === '') {
-        delete values.superior;
-      }
-     
-      
+        delete values.superior;}
 
       const jobDB = await JobModel.findById(id)
       for (const dependent of dependents) {
@@ -708,10 +670,11 @@ const officerModel = require('../schemas/officer.model')
       if (jobDB.superior && !job.superior) {
         await JobModel.findByIdAndUpdate(jobDB._id, { $unset: { superior: 1 } })
       }
+    
       return await JobModel.findByIdAndUpdate(id, values, { new: true }).populate("nivel_id").populate("superior").populate('partida_id').populate('dependencia_id')
     }
     
-    exports.getOrganization = async () => {
+  exports.getOrganization = async () => {
         const data = await JobModel.aggregate([      
             {
                 $match: { isRoot: true },
@@ -749,9 +712,9 @@ const officerModel = require('../schemas/officer.model')
         }); 
         //console.log(data)
         return  { organigrama:createOrgChartData2(data),tags:tags}
-    }
+  }
     
-    exports.getOrganization2 = async () => {
+  exports.getOrganization2 = async () => {
       const data = await JobModel.aggregate([      
           {
               $match: { isRoot: true },
@@ -788,7 +751,7 @@ const officerModel = require('../schemas/officer.model')
       }); 
       //console.log(tags)
       return  { organigrama:createOrgChartData2(data),tags:tags}
-    }
+  }
 
     const createOrgChartData = (data) => {
         

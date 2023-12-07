@@ -1,4 +1,5 @@
 const FuncionarioModel = require('../schemas/officer.model')
+const RotationModel = require('../schemas/rotation.model')
 
 exports.get = async () => {
     return await FuncionarioModel.find({}).populate('cargo', 'nombre').sort({ _id: -1 })
@@ -59,8 +60,9 @@ exports.add = async (officer) => {
     return officerDB
 }
 exports.edit = async (id_funcionario, funcionario) => {
-    const { dni } = funcionario
+    const { dni} = funcionario
     const funcionarioDB = await FuncionarioModel.findById(id_funcionario)
+
     if (!funcionarioDB) {
         throw ({ status: 400, message: 'El funcionario no existe' });
     }
@@ -73,9 +75,18 @@ exports.edit = async (id_funcionario, funcionario) => {
     if (funcionarioDB.cargo && !funcionario.cargo) {
         await FuncionarioModel.findByIdAndUpdate(funcionarioDB._id, { $unset: { cargo: 1 } })
     }
+
+    // const nuevaData = { 
+    //     cargo_id:  funcionario.cargo._id,
+    //     funcionario_id: funcionario._id  
+    // }   
+    // nuevaData = await RotationModel.save()
+
     const newFuncionario = await FuncionarioModel.findByIdAndUpdate(id_funcionario, funcionario, { new: true }).populate('cargo')
     return newFuncionario
 }
+
+
 exports.delete = async (id_officer) => {
     const officerDB = await FuncionarioModel.findById(id_officer);
     if (!officerDB) throw ({ status: 400, message: 'El funcionario no existe' });
