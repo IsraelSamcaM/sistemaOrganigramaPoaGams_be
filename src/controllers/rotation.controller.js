@@ -31,6 +31,39 @@ router.get('/:text', async (req = request, res = response) => {
         })
     }
 })
+
+router.get('/rotation_fun/:text', async (req = request, res = response) => {
+    try {
+        const rotations = await rotationService.rotationFromOfficer(req.params.text)
+        return res.status(200).json({
+            ok: true,
+            rotations
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,  
+            message: 'Error in server'
+        })
+    }
+})
+
+router.get('/rotation_car/:text', async (req = request, res = response) => {
+    try {
+        const rotations = await rotationService.rotationFromJob(req.params.text)
+        return res.status(200).json({
+            ok: true,
+            rotations
+        })
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            ok: false,  
+            message: 'Error in server'
+        })
+    }
+})
+
 router.put('/:id', async (req = request, res = response) => {
     try {
         const rotations = await rotationService.edit(req.params.id, req.body)

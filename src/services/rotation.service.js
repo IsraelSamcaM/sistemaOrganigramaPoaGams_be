@@ -11,6 +11,19 @@ exports.search = async (text) => {
     return RotationModel.find({ fecha: regex })
 }
 
+exports.rotationFromOfficer = async(text) =>{
+    const rotaciones = await RotationModel.find({funcionario_id: text}).sort({_id:1}).populate("cargo_id")
+    const cantidadRotaciones = rotaciones.length;
+    return rotaciones
+}
+
+exports.rotationFromJob = async(text) =>{
+    const rotaciones = await RotationModel.find({cargo_id: text}).sort({_id:1}).populate("funcionario_id")
+    const cantidadRotaciones = rotaciones.length;
+    return rotaciones
+}
+
+
 
 exports.add = async (rotation) => {
     const createdRotation = new RotationModel(rotation) 
