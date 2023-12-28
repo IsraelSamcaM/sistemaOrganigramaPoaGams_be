@@ -5,8 +5,10 @@ const OfficerModel = require('../schemas/officer.model')
 const LevelModel = require('../schemas/level.model')
 const officerModel = require('../schemas/officer.model')
 
+
   exports.get = async () => {
       const data = await JobModel.find({}).sort({ _id: -1 }).populate("nivel_id").populate("detalle_id").populate("superior").populate('partida_id').populate('dependencia_id');
+      //console.log(data)
       const dataFuncionarios = await OfficerModel.find({}).sort({ _id: -1 }).populate('cargo');  
       const resultados = [];
       for (const cargo of data) {
@@ -18,7 +20,38 @@ const officerModel = require('../schemas/officer.model')
         resultados.push(resultado);
       }
       return resultados;
-  };
+  } 
+
+  exports.getJobsAndLevels = async () => {
+    const data = await JobModel.find({}).sort({ _id: -1 })
+  } 
+
+  exports.edit = async (id, job) => {
+    console.log(job);
+    const { dependents, ...values } = job;
+
+    if (job.partida_id === '') {
+      delete values.partida_id;}
+    if (job.duracion_contrato) {
+      values.duracion_contrato = parseInt(values.duracion_contrato)}
+    if (job.denominacion === '') {
+      delete values.denominacion;}
+    if (job.superior === '') {
+      delete values.superior;}
+
+    const jobDB = await JobModel.findById(id)
+    for (const dependent of dependents) {
+      await JobModel.findByIdAndUpdate(dependent, { superior: id })
+    }
+    if (jobDB.tipoContrato === 'CONTRATO' && job.tipoContrato === 'ITEM') {
+      await JobDetailModel.findByIdAndDelete(jobDB.detalle_id)
+    }   
+    if (jobDB.superior && !job.superior) {
+      await JobModel.findByIdAndUpdate(jobDB._id, { $unset: { superior: 1 } })
+    }
+
+    return await JobModel.findByIdAndUpdate(id, values, { new: true }).populate("nivel_id").populate("superior").populate('partida_id').populate('dependencia_id')
+  }
   
   exports.getNoOrganigram = async () => {
       const data =await JobModel.find({$and: [{isRoot: false},{superior: null}]}).sort({ _id: -1}).populate('detalle_id').populate('nivel_id').populate('partida_id')
@@ -108,132 +141,6 @@ const officerModel = require('../schemas/officer.model')
         resultados.push(resultado);
       }
       return resultados;
-  };
-  
-    
-    /*       todo completo de la tabla  de items      */
-  exports.getItemFullTable= async () => {
-        const data = await JobModel.aggregate([
-          {
-            $match: {
-              tipoContrato: "ITEM",
-              estado: { $ne: "ELIMINACION" }
-            }
-          },
-          {
-            $lookup: {
-              from: "niveles",
-              localField: "nivel_id", 
-              foreignField: "_id",
-              as: "nivel"
-            }
-          },
-          {
-            $unwind: "$nivel"
-          },
-          {
-            $project: {
-              _id: 0,
-              nombre: 1,
-              tipoContrato: 1,
-              nivel: "$nivel.nivel",
-              sueldoMensual: "$nivel.sueldo",
-              sueldoAnual: { $multiply: ["$nivel.sueldo", 12] },
-              Aguinaldo: "$nivel.sueldo",
-              CNS: { $multiply: ["$nivel.sueldo", "$nivel.cajaSalud", 12] },
-              AporteSolidario:  { $multiply: ["$nivel.sueldo", "$nivel.solidario", 12]  },
-              AFP: { $multiply: ["$nivel.sueldo", "$nivel.profecional", 12]  },
-              proVivienda: { $multiply: ["$nivel.sueldo", "$nivel.proVivienda", 12] }
-            }
-          },
-          {
-            $addFields: {
-              TotalAportes: { $sum: ["$CNS", "$AporteSolidario", "$AFP", "$proVivienda"]}
-            }
-          },
-          {
-            $addFields: {
-              Total: { $sum: ["$sueldoAnual", "$Aguinaldo", "$TotalAportes"] }
-            }
-          }
-        ]);
-      return data;    
-  }
-
-  
-/*   todo completo de la tabla  de eventuales    */
-  exports.getEventualFullTable = async () => {
-    const data = await JobModel.aggregate([
-      {
-        $match: {
-          tipoContrato: "CONTRATO",
-          estado: { $ne: "ELIMINACION" }
-        }
-      },
-      {
-        $lookup: {
-          from: "partidas",
-          localField: "partida_id",
-          foreignField: "_id",
-          as: "partida"
-        }
-      },
-      {
-        $lookup: {
-          from: "niveles",
-          localField: "nivel_id",
-          foreignField: "_id",
-          as: "nivel"
-        }
-      },
-      {
-        $unwind: "$partida"
-      },
-      {
-        $unwind: "$nivel"
-      },
-      {
-        $project: {
-          _id: 0,
-          partidaPresupuestaria: "$partida.nombrePartida",
-          objetivoPuesto: "$partida.objetivo",
-          secretaria: 1,
-          nivel: "$nivel.nivel",
-
-          denominacion: 1,
-
-          nombre: 1,
-          tipoContrato: 1,
-          estado: 1,
-          sueldoMensual: "$nivel.sueldo",
-          tipoGasto: "$partida.tipoGasto",
-          fuenteFinanciamiento: "$partida.fuenteFinanciamiento",
-          organismoFinanciador: "$partida.organismoFinanciador",
-
-          duracion_contrato: 1,
-          //ya no hay casos
-
-          sueldoAnual: { $multiply: ["$nivel.sueldo", 12] },
-          Aguinaldo: "$nivel.sueldo",
-          CNS: { $multiply: ["$nivel.sueldo", "$nivel.cajaSalud", 12] },
-          AporteSolidario: { $multiply: ["$nivel.sueldo", "$nivel.solidario", 12] },
-          AFP: { $multiply: ["$nivel.sueldo", "$nivel.profecional", 12] },
-          proVivienda: { $multiply: ["$nivel.sueldo", "$nivel.proVivienda", 12] }
-        }
-      },
-      {
-        $addFields: {
-          TotalAportes: { $sum: ["$CNS", "$AporteSolidario", "$AFP", "$proVivienda"] }
-        }
-      },
-      {
-        $addFields: {
-          Total: { $sum: ["$sueldoAnual", "$Aguinaldo", "$TotalAportes"] }
-        }
-      }
-    ]);
-    //console.log(data)
-    return data;
   }
     
   exports.getEscalaSalarial= async () => {
@@ -278,10 +185,7 @@ const officerModel = require('../schemas/officer.model')
                   }
                 }
               ])
-        
-        //console.log(data)
         return data
-
   }
     
   exports.getTotalEscalaSalarial = async () => {
@@ -337,7 +241,7 @@ const officerModel = require('../schemas/officer.model')
           return data
   }
 
-    //retorna por partida presupuestaria
+  //retorna por partida presupuestaria
   exports.getEscalaSalarialPartidaPresupuestaria = async () => {
       const data = await JobModel.aggregate([
             {
@@ -457,71 +361,6 @@ const officerModel = require('../schemas/officer.model')
           ])
           //console.log(data)
           return data
-    }
-
-  //retorna por el total global de items 
-  exports.getItemsGlobalTotal = async () => {
-    const data = await JobModel.aggregate([
-      {
-        $match: {
-          tipoContrato: "ITEM",
-          estado: { $ne: "ELIMINACION" }
-        }
-      },
-      {
-        $lookup: {
-          from: "niveles",
-          localField: "nivel_id",
-          foreignField: "_id",
-          as: "nivel"
-        }
-      },
-      {
-        $unwind: "$nivel"
-      },
-      {
-        $project: {
-          _id: 0,
-          nombre: 1,
-          tipoContrato: 1,
-          nivel: "$nivel.nivel",
-          sueldoMensual: "$nivel.sueldo",
-          sueldoAnual: { $multiply: ["$nivel.sueldo", 12] },
-          Aguinaldo: "$nivel.sueldo",
-          CNS: { $multiply: ["$nivel.sueldo", "$nivel.cajaSalud",12] },
-          AporteSolidario: { $multiply: ["$nivel.sueldo", "$nivel.solidario",12] },
-          AFP:{ $multiply: ["$nivel.sueldo" ,12, "$nivel.profecional"]},
-          proVivienda: { $multiply: ["$nivel.sueldo", "$nivel.proVivienda",12]  }
-        }
-      },
-      {
-        $addFields: {
-          TotalAportes: { $sum: ["$CNS", "$AporteSolidario", "$AFP", "$proVivienda"]}
-        }
-      },
-      {
-        $addFields: {
-          Total:{$sum: ["$sueldoAnual", "$Aguinaldo", "$TotalAportes"] }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          TotalSueldoMensual: { $sum: "$sueldoMensual" },
-          TotalSueldoAnual: { $sum: "$sueldoAnual" },
-          TotalAguinaldo: { $sum: "$Aguinaldo" },
-          TotalCNS: { $sum: "$CNS" },
-          TotalAporteSolidario: { $sum: "$AporteSolidario" },
-          TotalAFP: { $sum: "$AFP" },
-          TotalProVivienda: { $sum: "$proVivienda" },
-          TotalAportes: { $sum: "$TotalAportes" },
-          TotalTotal: { $sum: "$Total" },
-          TotalItems: { $sum: 1 } 
-        }
-      }
-    ]);
-      //console.log(data)
-      return data
   }
 
   //retorna por el total global por secretarias 
@@ -608,18 +447,20 @@ const officerModel = require('../schemas/officer.model')
         ])
   }
 
-    exports.searchDependents = async (text) => {
+  exports.searchDependents = async (text) => {
         const regex = new RegExp(text, 'i')
         return await JobModel.find({ superior: null, isRoot: false, nombre: regex }).limit(5)
-    }
-    exports.getDependentsOfSuperior = async (idSuperior) => {
-        return JobModel.find({ superior: idSuperior })
-    }
-    exports.removeDependent = async (idDependentJob) => {
-        return JobModel.findByIdAndUpdate(idDependentJob, { superior: null })
-    }
+  }
 
-    exports.add = async (job) => {
+  exports.getDependentsOfSuperior = async (idSuperior) => {
+        return JobModel.find({ superior: idSuperior })
+  }
+
+  exports.removeDependent = async (idDependentJob) => {
+        return JobModel.findByIdAndUpdate(idDependentJob, { superior: null })
+  }
+
+  exports.add = async (job) => {
       console.log(job);
       const { dependents, ...values } = job;
       if (job.partida_id === '') {
@@ -644,36 +485,8 @@ const officerModel = require('../schemas/officer.model')
       }
       const populatedJob = await JobModel.findById(newJob._id).populate('nivel_id').populate('partida_id').populate('dependencia_id').exec();
       return populatedJob;
-    };
-    
+  }
 
-  exports.edit = async (id, job) => {
-      console.log(job);
-      const { dependents, ...values } = job;
-
-      if (job.partida_id === '') {
-        delete values.partida_id;}
-      if (job.duracion_contrato) {
-        values.duracion_contrato = parseInt(values.duracion_contrato)}
-      if (job.denominacion === '') {
-        delete values.denominacion;}
-      if (job.superior === '') {
-        delete values.superior;}
-
-      const jobDB = await JobModel.findById(id)
-      for (const dependent of dependents) {
-        await JobModel.findByIdAndUpdate(dependent, { superior: id })
-      }
-      if (jobDB.tipoContrato === 'CONTRATO' && job.tipoContrato === 'ITEM') {
-        await JobDetailModel.findByIdAndDelete(jobDB.detalle_id)
-      }   
-      if (jobDB.superior && !job.superior) {
-        await JobModel.findByIdAndUpdate(jobDB._id, { $unset: { superior: 1 } })
-      }
-    
-      return await JobModel.findByIdAndUpdate(id, values, { new: true }).populate("nivel_id").populate("superior").populate('partida_id').populate('dependencia_id')
-    }
-    
   exports.getOrganization = async () => {
         const data = await JobModel.aggregate([      
             {
@@ -753,48 +566,7 @@ const officerModel = require('../schemas/officer.model')
       return  { organigrama:createOrgChartData2(data),tags:tags}
   }
 
-    const createOrgChartData = (data) => {
-        
-        const aux = data
-        
-        data.forEach((element, i) => {
-            element.organigram.forEach((element2, y) => {               
-            });          
-        });
-        const newData = data.map(el => {    
-            const newOrganigram = el.organigram.map(item => {                    
-                return {
-                    id: item._id,
-                    pid: item.superior,
-                    name: createFullName(item.officer),
-                    //img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
-                    //title: item.nombre,
-                    title: createNameJob(item.nombre , item.tipoContrato),
-                    tags: ["subLevels"+item.nivel_id.nivel],
-                    nivel: ["Nivel: "+item.nivel_id.nivel],
-                    estado: item.estado
-                }
-            })
-            return {
-                name: el.nombre,
-                tags: ["subLevels"+el.nivel_id.nivel],
-                data: [{
-                    id: el._id,
-                    name: createFullName(el.officer),
-                    //img: 'https://cdn.balkan.app/shared/empty-img-white.svg',
-                    //title: el.nombre,
-                    title: createNameJob(el.nombre , el.tipoContrato),
-                    nivel: ["Nivel: "+el.nivel_id.nivel],
-                    estado: el.estado
-    
-                }, ...newOrganigram]
-            }
-        })
-        //console.log(newData)
-        return newData
-    }
-
-    const createOrgChartData2 = (data) => {
+  const createOrgChartData2 = (data) => {
         
       data.forEach((element, i) => {
           element.organigram.forEach((element2, y) => {               
@@ -828,20 +600,18 @@ const officerModel = require('../schemas/officer.model')
       //console.log(newDatA)
       return newData
   }
-
     
-    const createFullName = (officer) => {
+  const createFullName = (officer) => {
         if (!officer) return 'Sin funcionario'
         return [officer.nombre, officer.paterno, officer.materno].filter(Boolean).join(" ");
-    }
+  }
 
-
-    const createNameJob = (nombre, tipoContrato) => {
+  const createNameJob = (nombre, tipoContrato) => {
       if (tipoContrato == 'CONTRATO') return nombre + " (C)"
       return nombre
-    }
+  }
 
-    const asignarColor = (estado) => {
+  const asignarColor = (estado) => {
       const colores = {
         'EVENTUAL': "#93CDDD",
         'ITEM': "#DDE2CD",
@@ -853,8 +623,7 @@ const officerModel = require('../schemas/officer.model')
         'ELIMINACION': "#F58B82 "
       };
       return colores[estado] || "#000000";
-    }
-
+  }
 
   exports.getJoinLevel = async () => {
         try {
@@ -881,3 +650,6 @@ const officerModel = require('../schemas/officer.model')
           throw new Error('Error getting job with level: ' + error.message);
         }
   }
+
+
+

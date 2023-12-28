@@ -3,7 +3,7 @@ const { default: mongoose } = require('mongoose')
 const LevelModel = require('../schemas/level.model')
 
 exports.get = async () => {
-return await LevelModel.find({}).sort({ _id: -1 })
+return await LevelModel.find({}).sort({ _id: 1 })
 }
 
 exports.search = async (text) => {
