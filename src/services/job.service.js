@@ -8,7 +8,7 @@ const officerModel = require('../schemas/officer.model')
 
   exports.get = async () => {
       const data = await JobModel.find({}).sort({ _id: -1 }).populate("nivel_id").populate("detalle_id").populate("superior").populate('partida_id').populate('dependencia_id');
-      //console.log(data)
+      
       const dataFuncionarios = await OfficerModel.find({}).sort({ _id: -1 }).populate('cargo');  
       const resultados = [];
       for (const cargo of data) {
@@ -363,63 +363,7 @@ const officerModel = require('../schemas/officer.model')
           return data
   }
 
-  //retorna por el total global por secretarias 
-  exports.getGlobalSecretaria = async () => {
-          const data = await JobModel.aggregate([
-            {
-              $match: {
-                estado: { $ne: "ELIMINACION" }
-              }
-            },
-            {
-              $lookup: {
-                from: "niveles",
-                localField: "nivel_id",
-                foreignField: "_id",
-                as: "nivelInfo"
-              }
-            },
-            {
-              $unwind: "$nivelInfo"
-            },
-            {
-              $group: {
-                _id: "$secretaria",
-                cantidadCargos: { $sum: 1 },
-                totalSueldos: { $sum: "$nivelInfo.sueldo" },
-                cantidadItem: {
-                  $sum: {
-                    $cond: [{ $eq: ["$tipoContrato", "ITEM"] }, 1, 0]
-                  }
-                },
-                cantidadContrato: {
-                  $sum: {
-                    $cond: [{ $eq: ["$tipoContrato", "CONTRATO"] }, 1, 0]
-                  }
-                }
-              }
-            },
-            {
-              $project: {
-                _id: 1,
-                cantidadCargos: 1,
-                totalSueldos: 1,
-                aguinaldos: "$totalSueldos",
-                aportes: { $multiply: ["$totalSueldos", 12, 0.1671]},
-                totalSueldoAnual: { $multiply: ["$totalSueldos", 12] },
-                cantidadItem: 1,
-                cantidadContrato: 1
-              }
-            },
-            {
-              $addFields: {
-                total: { $sum: ["$aguinaldos", "$aportes", "$totalSueldoAnual"] }
-              }
-            }
-          ])
-          //console.log(data)
-          return data
-  }
+ 
     
   exports.searchJobForUser = async (text) => {
         const regex = new RegExp(text, 'i')

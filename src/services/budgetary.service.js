@@ -1,6 +1,7 @@
 const { default: mongoose } = require('mongoose')
 
 const BudgetaryModel = require('../schemas/budgetary.model')
+const JobModel = require('../schemas/job.model')
 
 exports.get = async () => {
 return await BudgetaryModel.find({}).sort({ _id: -1 })
@@ -56,4 +57,9 @@ exports.searchWithText  = async (text) =>{
         { $sort: { _id: -1 } }
     ]);
     return dataPaginated;
-  } 
+}
+
+exports.verificarDeshabilitacion = async (id) => {  
+    const job = await JobModel.findOne({partida_id: id,estado: { $ne: 'ELIMINACION' } });
+    return !!job; 
+};
