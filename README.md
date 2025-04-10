@@ -52,6 +52,6 @@ npm run dev
 
 Aquí se visualiza el esquema general utilizado en MongoDB para la gestión de datos:
 
-![MongoDB Schema](./assets/mongodb-schema.png)
+![MongoDB Schema](./src/assets/mogodb.png)
 
 > Asegúrate de colocar la imagen del esquema en la carpeta `/assets` con el nombre `mongodb-schema.png`.
