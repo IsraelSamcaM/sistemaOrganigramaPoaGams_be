@@ -54,4 +54,3 @@ Aquí se visualiza el esquema general utilizado en MongoDB para la gestión de d
 
 ![MongoDB Schema](./src/assets/mogodb.png)
 
-> Asegúrate de colocar la imagen del esquema en la carpeta `/assets` con el nombre `mongodb-schema.png`.
