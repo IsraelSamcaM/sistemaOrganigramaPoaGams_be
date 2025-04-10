@@ -12,6 +12,10 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 dbConection()
 app.use(routes)
+
+app.get('/', (req, res) => {
+    res.send('Welcome to the root route!');
+});
 server.listen(process.env.PORT, () => {
     console.log('Server listen in port', process.env.PORT)
 })
