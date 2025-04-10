@@ -39,11 +39,11 @@ http://localhost:3002/
 npm install
 ```
 
-3. Crea un archivo `.env` con las variables necesarias como `PORT` y `MONGO_URI`.
+3. Crea un archivo `.env` con las variables necesarias como `PORT` y `URL_DATABASE`.
 4. Inicia el servidor:
 
 ```bash
-npm run dev
+node index.js
 ```
 
 > El servidor escuchará en el puerto definido (por defecto `3002`).
